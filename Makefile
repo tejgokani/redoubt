@@ -71,7 +71,7 @@ hooks: $(HOOKLIB)
 
 # ---- catch typos in the Linux provider from a non-Linux host -------------
 syntax-linux:
-	$(CC) -std=gnu11 -fsyntax-only -Wall -Wextra -Wno-unused-parameter -D__linux__ -D_GNU_SOURCE \
+	$(CC) -std=gnu11 -fsyntax-only -Wall -Wextra -Werror -Wno-unused-parameter -Wno-deprecated-declarations -D__linux__ -D_GNU_SOURCE \
 	    -Itests/shim -Iinclude -Isrc src/platform/linux.c
 
 install: $(BIN)

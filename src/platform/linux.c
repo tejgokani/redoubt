@@ -51,7 +51,7 @@ typedef struct {
     int kc_fd;
     Elf64_Phdr *ph;
     size_t nph;
-    uint64_t *secs; /* section addresses of every listed module, from /sys/module/<m>/sections/*, sorted */
+    uint64_t *secs; /* section addresses of every listed module, from /sys/module/<m>/sections/, sorted */
     size_t nsecs, capsecs;
     int secs_loaded;
 } lin_t;
@@ -409,7 +409,7 @@ static int cmp_u64(const void *a, const void *b) {
     return x < y ? -1 : (x > y ? 1 : 0);
 }
 
-/* Every allocated ELF section of every *listed* module has a file under /sys/module/<m>/sections/, containing
+/* Every allocated ELF section of every *listed* module has a file under /sys/module/<m>/sections/ containing
  * its load address.  Unlike kallsyms this also names anonymous data (.rodata strings, .data..ro_after_init) that
  * has no symbol, so it explains every region a listed module owns. */
 static void secs_load(lin_t *L) {
