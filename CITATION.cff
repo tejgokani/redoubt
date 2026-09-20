@@ -1,0 +1,25 @@
+cff-version: 1.2.0
+message: "If you use Redoubt in research or coursework, please cite it as below."
+type: software
+title: "Redoubt: a cross-view kernel-module rootkit detector for Linux and macOS"
+abstract: >-
+  Redoubt detects kernel-module rootkits by collecting the same kernel-level
+  fact through several independent paths and reporting when they disagree.
+  It is written in dependency-free C, is read-only, and runs on Linux and macOS.
+authors:
+  - family-names: Gokani
+    given-names: Tej
+repository-code: "https://github.com/tejgokani/redoubt"
+url: "https://github.com/tejgokani/redoubt"
+license: MIT
+version: 1.0.0
+date-released: "2026-09-21"
+keywords:
+  - rootkit detection
+  - kernel security
+  - loadable kernel modules
+  - cross-view analysis
+  - Linux
+  - macOS
+  - digital forensics
+  - incident response

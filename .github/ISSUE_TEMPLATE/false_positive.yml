@@ -1,0 +1,42 @@
+name: False positive
+description: A check flagged something on a machine you believe is clean
+labels: ["false-positive"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        False positives are treated as high-priority bugs: a detector nobody can trust in production is not useful.
+        Real-kernel reports are especially valuable - three of the bugs fixed before 1.0 were found exactly this way.
+  - type: input
+    id: check
+    attributes:
+      label: Which check fired?
+      description: The check id, for example `mod-orphan-mem` or `ftrace-hooks`
+    validations:
+      required: true
+  - type: textarea
+    id: finding
+    attributes:
+      label: The finding
+      description: The full finding text (title, evidence lines, confidence). `redoubt scan --json` is ideal.
+      render: text
+    validations:
+      required: true
+  - type: input
+    id: system
+    attributes:
+      label: System
+      description: Distribution, `uname -srm`, and whether it is a VM, container or bare metal
+    validations:
+      required: true
+  - type: textarea
+    id: context
+    attributes:
+      label: What legitimately runs here that might explain it?
+      description: eBPF or observability agents, kernel livepatch, DKMS or vendor drivers, hypervisor tools, security agents, and so on.
+  - type: checkboxes
+    id: snapshot
+    attributes:
+      label: Snapshot
+      options:
+        - label: I can share a `redoubt snapshot` of this machine. (Snapshots contain process names, listening ports and paths - review them before attaching.)

@@ -1,0 +1,273 @@
+<!doctype html>
+<html lang="en" data-resolution="landscape">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1920, height=1080" />
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+    <style>
+      :root {
+        --bg: #07090b;
+        --panel: #0d1117;
+        --line: #1f2733;
+        --text: #e6edf3;
+        --dim: #8b95a1;
+        --red: #ff4d4f;
+        --green: #3ddc84;
+        --amber: #f5b942;
+        --mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+        --sans: Inter, "Helvetica Neue", system-ui, sans-serif;
+      }
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      html, body { width: 1920px; height: 1080px; overflow: hidden; background: var(--bg); }
+      #root { position: relative; width: 1920px; height: 1080px; overflow: hidden; background: var(--bg); color: var(--text); font-family: var(--mono); }
+      .layer { position: absolute; inset: 0; }
+      #glow { background: radial-gradient(ellipse 60% 55% at 50% 62%, rgba(255, 77, 79, 0.22), rgba(255, 77, 79, 0) 70%); opacity: 0.3; }
+      #scan { background: repeating-linear-gradient(0deg, rgba(255,255,255,0.028) 0 2px, transparent 2px 5px); }
+      #vig { background: radial-gradient(ellipse 80% 80% at 50% 50%, transparent 55%, rgba(0,0,0,0.65) 100%); }
+      .scene { position: absolute; inset: 0; }
+      .a { opacity: 0; }
+      .abs { position: absolute; }
+      .red { color: var(--red); } .green { color: var(--green); } .amber { color: var(--amber); } .dim { color: var(--dim); }
+
+      /* S1 */
+      .cmd { left: 200px; font-size: 46px; white-space: pre; }
+      .out { left: 200px; font-size: 40px; color: var(--dim); white-space: pre; }
+      .hl { left: 0; width: 1920px; text-align: center; font-family: var(--sans); font-weight: 800; letter-spacing: -0.03em; font-size: 128px; }
+
+      /* S2 */
+      #s2title { left: 220px; top: 150px; font-family: var(--sans); font-weight: 800; font-size: 100px; letter-spacing: -0.03em; }
+      #s2sub { left: 224px; top: 285px; font-size: 36px; color: var(--dim); }
+      #s2panel { left: 220px; top: 400px; width: 1480px; height: 470px; background: var(--panel); border: 2px solid var(--line); border-radius: 16px; }
+      #s2q { left: 260px; top: 430px; font-size: 34px; color: var(--dim); }
+      .p-row { left: 260px; width: 1400px; height: 96px; display: flex; align-items: center; border-top: 2px solid var(--line); }
+      .p-row .path { width: 440px; font-size: 44px; }
+      .p-row .how { width: 300px; font-size: 32px; color: var(--dim); }
+      .p-row .res { font-size: 44px; font-weight: 700; color: #b4bdc8; }
+      .p-row .res.alive { color: var(--red); }
+      #stamp { left: 1330px; top: 595px; font-size: 72px; font-weight: 800; color: var(--red); border: 8px solid var(--red); padding: 4px 26px; border-radius: 10px; transform: rotate(-5deg); background: rgba(7,9,11,0.88); letter-spacing: 0.02em; }
+
+      /* S3 */
+      #win { left: 160px; top: 60px; width: 1600px; height: 960px; background: var(--panel); border: 2px solid var(--line); border-radius: 18px; overflow: hidden; }
+      #bar { left: 160px; top: 60px; width: 1600px; height: 60px; border-bottom: 2px solid var(--line); background: #10161e; border-radius: 18px 18px 0 0; }
+      .dot { top: 82px; width: 18px; height: 18px; border-radius: 50%; }
+      #wtitle { left: 260px; top: 76px; font-size: 24px; color: var(--dim); }
+      #c3 { left: 200px; top: 140px; font-size: 34px; white-space: pre; }
+      #h3a { left: 200px; top: 200px; font-size: 32px; font-weight: 700; white-space: pre; }
+      #h3b { left: 200px; top: 244px; font-size: 26px; color: var(--dim); white-space: pre; }
+      #h3c { left: 200px; top: 300px; font-size: 26px; color: var(--dim); letter-spacing: 0.12em; }
+      .crow { left: 190px; width: 1520px; height: 48px; display: flex; align-items: center; padding-left: 14px; font-size: 29px; border-radius: 6px; white-space: pre; }
+      .crow .st { width: 130px; font-weight: 700; } .crow .nm { width: 340px; } .crow .ti { width: 720px; color: #c3ccd6; } .crow .rs { font-weight: 700; }
+      .crow.bad { background: rgba(255,77,79,0.12); }
+
+      /* S4 */
+      #card { left: 210px; top: 150px; width: 1500px; height: 780px; background: var(--panel); border: 2px solid var(--line); border-left: 12px solid var(--red); border-radius: 16px; }
+      #pill { left: 270px; top: 200px; background: var(--red); color: #1a0708; font-weight: 800; font-size: 34px; padding: 6px 22px; border-radius: 8px; }
+      #meta { left: 640px; top: 208px; font-size: 30px; color: var(--dim); }
+      #ftitle { left: 270px; top: 285px; width: 1380px; font-family: var(--sans); font-weight: 800; font-size: 72px; line-height: 1.08; letter-spacing: -0.025em; }
+      .f-row { left: 270px; font-size: 42px; white-space: pre; }
+      #fcap { left: 270px; top: 690px; font-size: 34px; color: var(--amber); }
+      #fresp { left: 270px; top: 780px; font-size: 30px; color: var(--dim); }
+
+      /* S5 */
+      #vlabel { left: 0; width: 1920px; text-align: center; top: 120px; font-size: 40px; letter-spacing: 0.35em; color: var(--dim); }
+      #vword { left: 0; width: 1920px; text-align: center; top: 175px; font-family: var(--sans); font-weight: 900; font-size: 236px; letter-spacing: -0.04em; color: var(--red); text-shadow: 0 0 60px rgba(255,77,79,0.45); }
+      .chip { top: 500px; height: 150px; background: var(--panel); border: 2px solid var(--line); border-radius: 14px; text-align: center; padding-top: 22px; }
+      .chip .n { font-size: 68px; font-weight: 800; display: block; line-height: 1.05; }
+      .chip .l { font-size: 28px; color: var(--dim); display: block; margin-top: 8px; }
+      #tag1, #tag2 { left: 0; width: 1920px; text-align: center; font-family: var(--sans); font-weight: 800; font-size: 78px; letter-spacing: -0.03em; }
+      #tag1 { top: 760px; } #tag2 { top: 870px; color: var(--green); }
+      #flash { background: #fff; opacity: 0; }
+
+      /* S6 */
+      #mark { left: 0; width: 1920px; text-align: center; top: 330px; font-family: var(--sans); font-weight: 800; font-size: 250px; letter-spacing: -0.05em; }
+      #mark i { color: var(--red); font-style: normal; }
+      #msub { left: 0; width: 1920px; text-align: center; top: 640px; font-size: 44px; }
+      #mfoot { left: 0; width: 1920px; text-align: center; top: 725px; font-size: 32px; color: var(--dim); letter-spacing: 0.06em; }
+    </style>
+  </head>
+  <body>
+    <div id="root" data-composition-id="main" data-start="0" data-duration="24.5" data-width="1920" data-height="1080">
+      <div id="glow" class="layer clip" data-start="0" data-duration="24.5" data-track-index="0"></div>
+
+      <div id="scan" class="layer clip" data-start="0" data-duration="24.5" data-track-index="2"></div>
+      <div id="vig" class="layer clip" data-start="0" data-duration="24.5" data-track-index="3"></div>
+
+      <!-- S1 -->
+      <div id="s1" class="scene clip" data-start="0" data-duration="5" data-track-index="1">
+        <div id="c1" class="abs cmd a" style="top:150px"></div>
+        <div id="o1" class="abs out a" style="top:210px">(no output)</div>
+        <div id="c2" class="abs cmd a" style="top:290px"></div>
+        <div id="o2" class="abs out a" style="top:350px">(no output)</div>
+        <div id="c3s1" class="abs cmd a" style="top:430px"></div>
+        <div id="o3" class="abs out a" style="top:490px">(no output)</div>
+        <div id="hl1" class="abs hl a" style="top:640px">Every tool says clean.</div>
+        <div id="hl2" class="abs hl a red" style="top:790px">The kernel is lying.</div>
+      </div>
+
+      <!-- S2 -->
+      <div id="s2" class="scene clip" data-start="5" data-duration="4.5" data-track-index="1">
+        <div id="s2title" class="abs a">So redoubt asks twice.</div>
+        <div id="s2sub" class="abs a">one fact &middot; three independent paths</div>
+        <div id="s2panel" class="abs a"></div>
+        <div id="s2q" class="abs a">Is pid 4242 alive?</div>
+        <div id="pr1" class="abs p-row a" style="top:490px"><span class="path">readdir(/proc)</span><span class="how">libc listing</span><span class="res">not listed</span></div>
+        <div id="pr2" class="abs p-row a" style="top:586px"><span class="path">getdents64</span><span class="how">raw syscall</span><span class="res">not listed</span></div>
+        <div id="pr3" class="abs p-row a" style="top:682px"><span class="path">kill(4242, 0)</span><span class="how">direct probe</span><span class="res alive">ALIVE</span></div>
+        <div id="stamp" class="abs a">DISAGREE</div>
+      </div>
+
+      <!-- S3 -->
+      <div id="s3" class="scene clip" data-start="9.5" data-duration="4" data-track-index="1">
+        <div id="win" class="abs"></div>
+        <div id="bar" class="abs"></div>
+        <div class="abs dot" style="left:190px;background:#ff5f57"></div>
+        <div class="abs dot" style="left:222px;background:#febc2e"></div>
+        <div class="abs dot" style="left:254px;background:#28c840"></div>
+        <div id="wtitle" class="abs" style="left:300px">redoubt &mdash; scenario replay, not a live scan</div>
+        <div id="c3" class="abs a"></div>
+        <div id="h3a" class="abs a"></div>
+        <div id="h3b" class="abs a">target : Linux 6.8.0-45-generic (x86_64)  &middot;  euid 0</div>
+        <div id="h3c" class="abs a">CHECKS</div>
+        <div id="rows"></div>
+      </div>
+
+      <!-- S4 -->
+      <div id="s4" class="scene clip" data-start="13.5" data-duration="3.5" data-track-index="1">
+        <div id="card" class="abs a"></div>
+        <div id="pill" class="abs a">CRITICAL &middot; 96%</div>
+        <div id="meta" class="abs a">syscall-table &nbsp;&middot;&nbsp; ATT&amp;CK T1014</div>
+        <div id="ftitle" class="abs a">3 syscall-table entries redirected outside kernel text</div>
+        <div id="fr1" class="abs f-row a" style="top:505px">#62   <b>kill</b>       <span class="red">&rarr; 0xffffffffc0600120</span></div>
+        <div id="fr2" class="abs f-row a" style="top:565px">#78   <b>getdents</b>   <span class="red">&rarr; 0xffffffffc0600240</span></div>
+        <div id="fr3" class="abs f-row a" style="top:625px">#217  <b>getdents64</b> <span class="red">&rarr; 0xffffffffc0600360</span></div>
+        <div id="fcap" class="abs a">no symbol: an unlisted, hidden module</div>
+        <div id="fresp" class="abs a">response: isolate the host, capture memory, rebuild.</div>
+      </div>
+
+      <!-- S5 -->
+      <div id="s5" class="scene clip" data-start="17" data-duration="5" data-track-index="1">
+        <div id="vlabel" class="abs a">VERDICT</div>
+        <div id="vword" class="abs a">COMPROMISED</div>
+        <div id="chip1" class="abs chip a" style="left:250px;width:440px"><span class="n red"><span id="score">0</span>/100</span><span class="l">risk score</span></div>
+        <div id="chip2" class="abs chip a" style="left:740px;width:440px"><span class="n green">13/13</span><span class="l">checks covered</span></div>
+        <div id="chip3" class="abs chip a" style="left:1230px;width:440px"><span class="n amber">5</span><span class="l">checks flagging</span></div>
+        <div id="tag1" class="abs a">A rootkit has to lie everywhere.</div>
+        <div id="tag2" class="abs a">Redoubt needs one disagreement.</div>
+        <div id="flash" class="layer"></div>
+      </div>
+
+      <!-- S6 -->
+      <div id="s6" class="scene clip" data-start="22" data-duration="2.5" data-track-index="1">
+        <div id="mark" class="abs a">redoubt<i>.</i></div>
+        <div id="msub" class="abs a">kernel-module rootkit detector</div>
+        <div id="mfoot" class="abs a">plain C &nbsp;&middot;&nbsp; no dependencies &nbsp;&middot;&nbsp; MIT</div>
+      </div>
+
+      <!--AUDIO-->
+    </div>
+
+    <script>
+      window.__timelines = window.__timelines || {};
+      const tl = gsap.timeline({ paused: true });
+      const $ = (s) => document.querySelector(s);
+      const RMS = /*RMS*/[];
+
+      const pop = (sel, t, o = {}) =>
+        tl.fromTo(sel, { opacity: 0, y: o.y ?? 18, scale: o.scale ?? 1 }, { opacity: 1, y: 0, scale: 1, duration: o.d ?? 0.35, ease: o.ease ?? "power3.out" }, t);
+      const on = (sel, t) => tl.set(sel, { opacity: 1 }, t);
+      function typeText(sel, text, t, d, prefixHtml) {
+        const el = $(sel);
+        const o = { n: 0 };
+        on(sel, t);
+        tl.to(o, { n: text.length, duration: d, ease: "none", onUpdate() {
+          const k = Math.round(o.n);
+          el.textContent = "$ " + text.slice(0, k) + (k < text.length ? "▌" : "");
+        } }, t);
+      }
+
+      // ---------- S1: three tools, three empty answers ----------
+      typeText("#c1", "lsmod | grep diamorphine", 0.2, 0.6);   on("#o1", 0.85);
+      typeText("#c2", "ls /proc | grep 4242", 1.0, 0.55);      on("#o2", 1.6);
+      typeText("#c3s1", "ls /sys/module | grep diamorphine", 1.75, 0.65); on("#o3", 2.45);
+      tl.to(["#c1", "#c2", "#c3s1", "#o1", "#o2", "#o3"], { opacity: 0.35, duration: 0.3 }, 2.5);
+      pop("#hl1", 2.52, { y: 30, d: 0.45 });
+      pop("#hl2", 3.52, { y: 30, d: 0.35 }); // beat-locked: 3.52s
+
+      // ---------- S2: ask the same question through independent paths ----------
+      pop("#s2title", 5.02, { y: 30, d: 0.45 });
+      pop("#s2sub", 5.3);
+      on("#s2panel", 5.9); on("#s2q", 6.0);
+      pop("#pr1", 6.02); pop("#pr2", 6.52); pop("#pr3", 7.02, { y: 10 }); // beat-grid: rows at 6.02 / 6.52 / 7.02
+      tl.fromTo("#stamp", { opacity: 0, scale: 1.7, rotation: -12 }, { opacity: 1, scale: 1, rotation: -5, duration: 0.22, ease: "power4.in" }, 7.52); // beat-locked: 7.52s
+      tl.to("#s2", { x: 8, duration: 0.05, yoyo: true, repeat: 3, ease: "none" }, 7.74);
+      tl.set("#s2", { x: 0 }, 7.96);
+
+      // ---------- S3: the scan ----------
+      const CHECKS = [
+        ["mod-xview", "Module list cross-view", 0],
+        ["mod-orphan-mem", "Orphaned module memory", "1 finding"],
+        ["mod-taint", "Taint & kernel-log accounting", "2 findings"],
+        ["mod-provenance", "Module provenance", 0],
+        ["syscall-table", "Syscall table integrity", "1 finding"],
+        ["ftrace-hooks", "ftrace hook ownership", 0],
+        ["inline-hooks", "Inline kernel-function hooks", 0],
+        ["proc-xview", "Hidden-process cross-view", "1 finding"],
+        ["net-xview", "Hidden-port cross-view", 0],
+        ["fs-xview", "Hidden file/directory cross-view", 0],
+        ["preload", "Dynamic-linker hijack", 0],
+        ["known-iocs", "Known rootkit indicators", "1 finding"],
+        ["hardening", "Hardening posture", "note"],
+      ];
+      const rowsEl = $("#rows");
+      CHECKS.forEach((c, i) => {
+        const bad = c[2] && c[2] !== "note";
+        const st = !c[2] ? ["[ ok ]", "green"] : bad ? ["[!!!!]", "red"] : ["[note]", "amber"];
+        const rs = !c[2] ? ["clean", "dim"] : bad ? [c[2], "red"] : ["1 finding", "amber"];
+        const d = document.createElement("div");
+        d.id = "row" + i;
+        d.className = "abs crow a" + (bad ? " bad" : "");
+        d.style.top = 342 + i * 49 + "px";
+        d.innerHTML = `<span class="st ${st[1]}">${st[0]}</span><span class="nm">${c[0]}</span><span class="ti">${c[1]}</span><span class="rs ${rs[1]}">${rs[0]}</span>`;
+        rowsEl.appendChild(d);
+      });
+      typeText("#c3", "./redoubt demo diamorphine-lkm", 9.55, 0.65);
+      $("#h3a").innerHTML = 'REDOUBT 1.0.0  <span class="dim" style="font-weight:400">kernel-module rootkit detector</span>';
+      on("#h3a", 10.3); on("#h3b", 10.4); on("#h3c", 10.5);
+      CHECKS.forEach((c, i) => pop("#row" + i, 10.6 + i * 0.2, { y: 8, d: 0.2 })); // 13 rows, 0.2s apart (accents; full set holds to 13.5)
+
+      // ---------- S4: the finding ----------
+      pop("#card", 13.5, { y: 24, d: 0.4 });
+      pop("#pill", 13.55); pop("#meta", 13.6);
+      pop("#ftitle", 13.62, { y: 20, d: 0.4 });
+      pop("#fr1", 14.52, { y: 8 }); pop("#fr2", 14.86, { y: 8 }); pop("#fr3", 15.2, { y: 8 });
+      pop("#fcap", 15.7); pop("#fresp", 16.1);
+
+      // ---------- S5: verdict ----------
+      tl.fromTo("#flash", { opacity: 0.85 }, { opacity: 0, duration: 0.5, ease: "power2.out" }, 17.02);
+      pop("#vlabel", 17.02, { y: 0, d: 0.3 });
+      tl.fromTo("#vword", { opacity: 0, scale: 1.35 }, { opacity: 1, scale: 1, duration: 0.3, ease: "expo.out" }, 17.02); // beat-locked: 17.02s (strong cue)
+      tl.to("#s5", { x: 12, duration: 0.05, yoyo: true, repeat: 5, ease: "none" }, 17.1);
+      tl.set("#s5", { x: 0 }, 17.42);
+      pop("#chip1", 17.52, { y: 16 }); pop("#chip2", 18.02, { y: 16 }); pop("#chip3", 18.52, { y: 16 }); // beat-grid: 17.52 / 18.02 / 18.52
+      const sc = { v: 0 };
+      tl.to(sc, { v: 100, duration: 0.8, ease: "power2.out", onUpdate() { $("#score").textContent = Math.round(sc.v); } }, 17.55);
+      pop("#tag1", 19.02, { y: 24, d: 0.4 }); pop("#tag2", 20.52, { y: 24, d: 0.4 });
+
+      // ---------- S6: wordmark ----------
+      tl.fromTo("#mark", { opacity: 0, scale: 0.92, y: 10 }, { opacity: 1, scale: 1, y: 0, duration: 0.6, ease: "expo.out" }, 22.02);
+      pop("#msub", 22.5); pop("#mfoot", 22.9);
+
+      // ---------- audio-reactive glow (music RMS, sampled per frame, seek-safe) ----------
+      const g = $("#glow");
+      const proxy = { t: 0 };
+      tl.to(proxy, { t: 24.5, duration: 24.5, ease: "none", onUpdate() {
+        const v = RMS[Math.min(RMS.length - 1, Math.floor(proxy.t * 30))] || 0;
+        const base = proxy.t < 13.5 ? 0.22 : proxy.t < 17 ? 0.4 : 0.55;
+        g.style.opacity = (base * (0.7 + 0.6 * v)).toFixed(3);
+      } }, 0);
+
+      window.__timelines["main"] = tl;
+      tl.seek(0);
+    </script>
+  </body>
+</html>

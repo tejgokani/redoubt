@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Report a security vulnerability
+    url: https://github.com/tejgokani/redoubt/security/advisories/new
+    about: Please report vulnerabilities privately. Do not open a public issue.
+  - name: Read the threat model first
+    url: https://github.com/tejgokani/redoubt/blob/main/docs/THREAT_MODEL.md
+    about: Some limitations (for example, a rootkit that lies in every view) are documented, not bugs.

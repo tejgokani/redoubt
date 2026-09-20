@@ -1,0 +1,332 @@
+<!doctype html>
+<html lang="en" data-resolution="landscape">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1920, height=1080" />
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+    <style>
+      :root {
+        --bg: #07090b;
+        --panel: #0d1117;
+        --line: #1f2733;
+        --text: #e6edf3;
+        --dim: #8b95a1;
+        --red: #ff4d4f;
+        --green: #3ddc84;
+        --amber: #f5b942;
+        --mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+        --sans: Inter, "Helvetica Neue", system-ui, sans-serif;
+      }
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      html, body { width: 1920px; height: 1080px; overflow: hidden; background: var(--bg); }
+      #root { position: relative; width: 1920px; height: 1080px; overflow: hidden; background: var(--bg); color: var(--text); font-family: var(--mono); }
+      .layer { position: absolute; inset: 0; }
+      #glow { background: radial-gradient(ellipse 60% 55% at 50% 62%, rgba(255, 77, 79, 0.22), rgba(255, 77, 79, 0) 70%); opacity: 0.3; }
+      #scan { background: repeating-linear-gradient(0deg, rgba(255,255,255,0.028) 0 2px, transparent 2px 5px); }
+      #vig { background: radial-gradient(ellipse 80% 80% at 50% 50%, transparent 55%, rgba(0,0,0,0.65) 100%); }
+      .scene { position: absolute; inset: 0; }
+      .a { opacity: 0; }
+      .abs { position: absolute; }
+      .red { color: var(--red); } .green { color: var(--green); } .amber { color: var(--amber); } .dim { color: var(--dim); }
+
+      /* S1 */
+      .cmd { left: 200px; font-size: 46px; white-space: pre; }
+      .out { left: 200px; font-size: 40px; color: var(--dim); white-space: pre; }
+      .hl { left: 0; width: 1920px; text-align: center; font-family: var(--sans); font-weight: 800; letter-spacing: -0.03em; font-size: 128px; }
+
+      /* S2 */
+      #s2title { left: 220px; top: 150px; font-family: var(--sans); font-weight: 800; font-size: 100px; letter-spacing: -0.03em; }
+      #s2sub { left: 224px; top: 285px; font-size: 36px; color: var(--dim); }
+      #s2panel { left: 220px; top: 400px; width: 1480px; height: 470px; background: var(--panel); border: 2px solid var(--line); border-radius: 16px; }
+      #s2q { left: 260px; top: 430px; font-size: 34px; color: var(--dim); }
+      .p-row { left: 260px; width: 1400px; height: 96px; display: flex; align-items: center; border-top: 2px solid var(--line); }
+      .p-row .path { width: 440px; font-size: 44px; }
+      .p-row .how { width: 300px; font-size: 32px; color: var(--dim); }
+      .p-row .res { font-size: 44px; font-weight: 700; color: #b4bdc8; }
+      .p-row .res.alive { color: var(--red); }
+      #stamp { left: 1330px; top: 595px; font-size: 72px; font-weight: 800; color: var(--red); border: 8px solid var(--red); padding: 4px 26px; border-radius: 10px; transform: rotate(-5deg); background: rgba(7,9,11,0.88); letter-spacing: 0.02em; }
+
+      /* S3 */
+      #win { left: 160px; top: 60px; width: 1600px; height: 960px; background: var(--panel); border: 2px solid var(--line); border-radius: 18px; overflow: hidden; }
+      #bar { left: 160px; top: 60px; width: 1600px; height: 60px; border-bottom: 2px solid var(--line); background: #10161e; border-radius: 18px 18px 0 0; }
+      .dot { top: 82px; width: 18px; height: 18px; border-radius: 50%; }
+      #wtitle { left: 260px; top: 76px; font-size: 24px; color: var(--dim); }
+      #c3 { left: 200px; top: 140px; font-size: 34px; white-space: pre; }
+      #h3a { left: 200px; top: 200px; font-size: 32px; font-weight: 700; white-space: pre; }
+      #h3b { left: 200px; top: 244px; font-size: 26px; color: var(--dim); white-space: pre; }
+      #h3c { left: 200px; top: 300px; font-size: 26px; color: var(--dim); letter-spacing: 0.12em; }
+      .crow { left: 190px; width: 1520px; height: 48px; display: flex; align-items: center; padding-left: 14px; font-size: 29px; border-radius: 6px; white-space: pre; }
+      .crow .st { width: 130px; font-weight: 700; } .crow .nm { width: 340px; } .crow .ti { width: 720px; color: #c3ccd6; } .crow .rs { font-weight: 700; }
+      .crow.bad { background: rgba(255,77,79,0.12); }
+
+      /* S4 */
+      #card { left: 210px; top: 150px; width: 1500px; height: 780px; background: var(--panel); border: 2px solid var(--line); border-left: 12px solid var(--red); border-radius: 16px; }
+      #pill { left: 270px; top: 200px; background: var(--red); color: #1a0708; font-weight: 800; font-size: 34px; padding: 6px 22px; border-radius: 8px; }
+      #meta { left: 640px; top: 208px; font-size: 30px; color: var(--dim); }
+      #ftitle { left: 270px; top: 285px; width: 1380px; font-family: var(--sans); font-weight: 800; font-size: 72px; line-height: 1.08; letter-spacing: -0.025em; }
+      .f-row { left: 270px; font-size: 42px; white-space: pre; }
+      #fcap { left: 270px; top: 690px; font-size: 34px; color: var(--amber); }
+      #fresp { left: 270px; top: 780px; font-size: 30px; color: var(--dim); }
+
+      /* S5 */
+      #vlabel { left: 0; width: 1920px; text-align: center; top: 120px; font-size: 40px; letter-spacing: 0.35em; color: var(--dim); }
+      #vword { left: 0; width: 1920px; text-align: center; top: 175px; font-family: var(--sans); font-weight: 900; font-size: 236px; letter-spacing: -0.04em; color: var(--red); text-shadow: 0 0 60px rgba(255,77,79,0.45); }
+      .chip { top: 500px; height: 150px; background: var(--panel); border: 2px solid var(--line); border-radius: 14px; text-align: center; padding-top: 22px; }
+      .chip .n { font-size: 68px; font-weight: 800; display: block; line-height: 1.05; }
+      .chip .l { font-size: 28px; color: var(--dim); display: block; margin-top: 8px; }
+      #tag1, #tag2 { left: 0; width: 1920px; text-align: center; font-family: var(--sans); font-weight: 800; font-size: 78px; letter-spacing: -0.03em; }
+      #tag1 { top: 760px; } #tag2 { top: 870px; color: var(--green); }
+      #flash { background: #fff; opacity: 0; }
+
+      /* S6 */
+      #mark { left: 0; width: 1920px; text-align: center; top: 330px; font-family: var(--sans); font-weight: 800; font-size: 250px; letter-spacing: -0.05em; }
+      #mark i { color: var(--red); font-style: normal; }
+      #msub { left: 0; width: 1920px; text-align: center; top: 640px; font-size: 44px; }
+      #mfoot { left: 0; width: 1920px; text-align: center; top: 725px; font-size: 32px; color: var(--dim); letter-spacing: 0.06em; }
+    </style>
+  </head>
+  <body>
+    <div id="root" data-composition-id="main" data-start="0" data-duration="24.5" data-width="1920" data-height="1080">
+      <div id="glow" class="layer clip" data-start="0" data-duration="24.5" data-track-index="0"></div>
+
+      <div id="scan" class="layer clip" data-start="0" data-duration="24.5" data-track-index="2"></div>
+      <div id="vig" class="layer clip" data-start="0" data-duration="24.5" data-track-index="3"></div>
+
+      <!-- S1 -->
+      <div id="s1" class="scene clip" data-start="0" data-duration="5" data-track-index="1">
+        <div id="c1" class="abs cmd a" style="top:150px"></div>
+        <div id="o1" class="abs out a" style="top:210px">(no output)</div>
+        <div id="c2" class="abs cmd a" style="top:290px"></div>
+        <div id="o2" class="abs out a" style="top:350px">(no output)</div>
+        <div id="c3s1" class="abs cmd a" style="top:430px"></div>
+        <div id="o3" class="abs out a" style="top:490px">(no output)</div>
+        <div id="hl1" class="abs hl a" style="top:640px">Every tool says clean.</div>
+        <div id="hl2" class="abs hl a red" style="top:790px">The kernel is lying.</div>
+      </div>
+
+      <!-- S2 -->
+      <div id="s2" class="scene clip" data-start="5" data-duration="4.5" data-track-index="1">
+        <div id="s2title" class="abs a">So redoubt asks twice.</div>
+        <div id="s2sub" class="abs a">one fact &middot; three independent paths</div>
+        <div id="s2panel" class="abs a"></div>
+        <div id="s2q" class="abs a">Is pid 4242 alive?</div>
+        <div id="pr1" class="abs p-row a" style="top:490px"><span class="path">readdir(/proc)</span><span class="how">libc listing</span><span class="res">not listed</span></div>
+        <div id="pr2" class="abs p-row a" style="top:586px"><span class="path">getdents64</span><span class="how">raw syscall</span><span class="res">not listed</span></div>
+        <div id="pr3" class="abs p-row a" style="top:682px"><span class="path">kill(4242, 0)</span><span class="how">direct probe</span><span class="res alive">ALIVE</span></div>
+        <div id="stamp" class="abs a">DISAGREE</div>
+      </div>
+
+      <!-- S3 -->
+      <div id="s3" class="scene clip" data-start="9.5" data-duration="4" data-track-index="1">
+        <div id="win" class="abs"></div>
+        <div id="bar" class="abs"></div>
+        <div class="abs dot" style="left:190px;background:#ff5f57"></div>
+        <div class="abs dot" style="left:222px;background:#febc2e"></div>
+        <div class="abs dot" style="left:254px;background:#28c840"></div>
+        <div id="wtitle" class="abs" style="left:300px">redoubt &mdash; scenario replay, not a live scan</div>
+        <div id="c3" class="abs a"></div>
+        <div id="h3a" class="abs a"></div>
+        <div id="h3b" class="abs a">target : Linux 6.8.0-45-generic (x86_64)  &middot;  euid 0</div>
+        <div id="h3c" class="abs a">CHECKS</div>
+        <div id="rows"></div>
+      </div>
+
+      <!-- S4 -->
+      <div id="s4" class="scene clip" data-start="13.5" data-duration="3.5" data-track-index="1">
+        <div id="card" class="abs a"></div>
+        <div id="pill" class="abs a">CRITICAL &middot; 96%</div>
+        <div id="meta" class="abs a">syscall-table &nbsp;&middot;&nbsp; ATT&amp;CK T1014</div>
+        <div id="ftitle" class="abs a">3 syscall-table entries redirected outside kernel text</div>
+        <div id="fr1" class="abs f-row a" style="top:505px">#62   <b>kill</b>       <span class="red">&rarr; 0xffffffffc0600120</span></div>
+        <div id="fr2" class="abs f-row a" style="top:565px">#78   <b>getdents</b>   <span class="red">&rarr; 0xffffffffc0600240</span></div>
+        <div id="fr3" class="abs f-row a" style="top:625px">#217  <b>getdents64</b> <span class="red">&rarr; 0xffffffffc0600360</span></div>
+        <div id="fcap" class="abs a">no symbol: an unlisted, hidden module</div>
+        <div id="fresp" class="abs a">response: isolate the host, capture memory, rebuild.</div>
+      </div>
+
+      <!-- S5 -->
+      <div id="s5" class="scene clip" data-start="17" data-duration="5" data-track-index="1">
+        <div id="vlabel" class="abs a">VERDICT</div>
+        <div id="vword" class="abs a">COMPROMISED</div>
+        <div id="chip1" class="abs chip a" style="left:250px;width:440px"><span class="n red"><span id="score">0</span>/100</span><span class="l">risk score</span></div>
+        <div id="chip2" class="abs chip a" style="left:740px;width:440px"><span class="n green">13/13</span><span class="l">checks covered</span></div>
+        <div id="chip3" class="abs chip a" style="left:1230px;width:440px"><span class="n amber">5</span><span class="l">checks flagging</span></div>
+        <div id="tag1" class="abs a">A rootkit has to lie everywhere.</div>
+        <div id="tag2" class="abs a">Redoubt needs one disagreement.</div>
+        <div id="flash" class="layer"></div>
+      </div>
+
+      <!-- S6 -->
+      <div id="s6" class="scene clip" data-start="22" data-duration="2.5" data-track-index="1">
+        <div id="mark" class="abs a">redoubt<i>.</i></div>
+        <div id="msub" class="abs a">kernel-module rootkit detector</div>
+        <div id="mfoot" class="abs a">plain C &nbsp;&middot;&nbsp; no dependencies &nbsp;&middot;&nbsp; MIT</div>
+      </div>
+
+      <audio id="music" data-start="0" data-duration="24.5" data-track-index="10" data-volume="1" src="assets/music/bed.mp3"></audio>
+      <audio id="sfx0" data-start="0.2" data-duration="0.3" data-track-index="11" data-volume="0.32" src="assets/sfx/keypress-001.wav"></audio>
+      <audio id="sfx1" data-start="0.3" data-duration="0.3" data-track-index="12" data-volume="0.32" src="assets/sfx/keypress-004.wav"></audio>
+      <audio id="sfx2" data-start="0.4" data-duration="0.3" data-track-index="13" data-volume="0.32" src="assets/sfx/keypress-007.wav"></audio>
+      <audio id="sfx3" data-start="0.5" data-duration="0.3" data-track-index="11" data-volume="0.32" src="assets/sfx/keypress-012.wav"></audio>
+      <audio id="sfx4" data-start="0.6" data-duration="0.3" data-track-index="12" data-volume="0.32" src="assets/sfx/keypress-019.wav"></audio>
+      <audio id="sfx5" data-start="0.7" data-duration="0.3" data-track-index="13" data-volume="0.32" src="assets/sfx/keypress-023.wav"></audio>
+      <audio id="sfx6" data-start="0.8" data-duration="0.3" data-track-index="11" data-volume="0.32" src="assets/sfx/keypress-027.wav"></audio>
+      <audio id="sfx7" data-start="1" data-duration="0.3" data-track-index="12" data-volume="0.32" src="assets/sfx/keypress-030.wav"></audio>
+      <audio id="sfx8" data-start="1.1" data-duration="0.3" data-track-index="11" data-volume="0.32" src="assets/sfx/keypress-001.wav"></audio>
+      <audio id="sfx9" data-start="1.2" data-duration="0.3" data-track-index="13" data-volume="0.32" src="assets/sfx/keypress-004.wav"></audio>
+      <audio id="sfx10" data-start="1.3" data-duration="0.3" data-track-index="12" data-volume="0.32" src="assets/sfx/keypress-007.wav"></audio>
+      <audio id="sfx11" data-start="1.4" data-duration="0.3" data-track-index="11" data-volume="0.32" src="assets/sfx/keypress-012.wav"></audio>
+      <audio id="sfx12" data-start="1.5" data-duration="0.3" data-track-index="13" data-volume="0.32" src="assets/sfx/keypress-019.wav"></audio>
+      <audio id="sfx13" data-start="1.75" data-duration="0.3" data-track-index="11" data-volume="0.32" src="assets/sfx/keypress-023.wav"></audio>
+      <audio id="sfx14" data-start="1.85" data-duration="0.3" data-track-index="12" data-volume="0.32" src="assets/sfx/keypress-027.wav"></audio>
+      <audio id="sfx15" data-start="1.95" data-duration="0.3" data-track-index="13" data-volume="0.32" src="assets/sfx/keypress-030.wav"></audio>
+      <audio id="sfx16" data-start="2.05" data-duration="0.3" data-track-index="11" data-volume="0.32" src="assets/sfx/keypress-001.wav"></audio>
+      <audio id="sfx17" data-start="2.15" data-duration="0.3" data-track-index="12" data-volume="0.32" src="assets/sfx/keypress-004.wav"></audio>
+      <audio id="sfx18" data-start="2.25" data-duration="0.3" data-track-index="13" data-volume="0.32" src="assets/sfx/keypress-007.wav"></audio>
+      <audio id="sfx19" data-start="2.35" data-duration="0.3" data-track-index="11" data-volume="0.32" src="assets/sfx/keypress-012.wav"></audio>
+      <audio id="sfx20" data-start="2.52" data-duration="0.6" data-track-index="12" data-volume="0.5" src="assets/sfx/impactSoft_medium_001.ogg"></audio>
+      <audio id="sfx21" data-start="3.52" data-duration="1" data-track-index="11" data-volume="0.75" src="assets/sfx/impactSoft_heavy_003.ogg"></audio>
+      <audio id="sfx22" data-start="5" data-duration="0.4" data-track-index="11" data-volume="0.45" src="assets/sfx/glitch_002.ogg"></audio>
+      <audio id="sfx23" data-start="6.02" data-duration="0.3" data-track-index="11" data-volume="0.4" src="assets/sfx/rollover2.ogg"></audio>
+      <audio id="sfx24" data-start="6.52" data-duration="0.3" data-track-index="11" data-volume="0.4" src="assets/sfx/rollover2.ogg"></audio>
+      <audio id="sfx25" data-start="7.02" data-duration="0.6" data-track-index="11" data-volume="0.5" src="assets/sfx/error_005.ogg"></audio>
+      <audio id="sfx26" data-start="7.52" data-duration="0.8" data-track-index="12" data-volume="0.7" src="assets/sfx/impactMetal_heavy_000.ogg"></audio>
+      <audio id="sfx27" data-start="9.55" data-duration="0.3" data-track-index="11" data-volume="0.32" src="assets/sfx/keypress-019.wav"></audio>
+      <audio id="sfx28" data-start="9.65" data-duration="0.3" data-track-index="12" data-volume="0.32" src="assets/sfx/keypress-023.wav"></audio>
+      <audio id="sfx29" data-start="9.75" data-duration="0.3" data-track-index="13" data-volume="0.32" src="assets/sfx/keypress-027.wav"></audio>
+      <audio id="sfx30" data-start="9.85" data-duration="0.3" data-track-index="11" data-volume="0.32" src="assets/sfx/keypress-030.wav"></audio>
+      <audio id="sfx31" data-start="9.95" data-duration="0.3" data-track-index="12" data-volume="0.32" src="assets/sfx/keypress-001.wav"></audio>
+      <audio id="sfx32" data-start="10.05" data-duration="0.3" data-track-index="13" data-volume="0.32" src="assets/sfx/keypress-004.wav"></audio>
+      <audio id="sfx33" data-start="10.15" data-duration="0.3" data-track-index="11" data-volume="0.32" src="assets/sfx/keypress-007.wav"></audio>
+      <audio id="sfx34" data-start="10.6" data-duration="0.3" data-track-index="11" data-volume="0.22" src="assets/sfx/click_003.ogg"></audio>
+      <audio id="sfx35" data-start="10.8" data-duration="0.3" data-track-index="12" data-volume="0.3" src="assets/sfx/bong_001.ogg"></audio>
+      <audio id="sfx36" data-start="11" data-duration="0.3" data-track-index="11" data-volume="0.3" src="assets/sfx/bong_001.ogg"></audio>
+      <audio id="sfx37" data-start="11.2" data-duration="0.3" data-track-index="12" data-volume="0.22" src="assets/sfx/click_003.ogg"></audio>
+      <audio id="sfx38" data-start="11.4" data-duration="0.3" data-track-index="11" data-volume="0.3" src="assets/sfx/bong_001.ogg"></audio>
+      <audio id="sfx39" data-start="11.6" data-duration="0.3" data-track-index="12" data-volume="0.22" src="assets/sfx/click_003.ogg"></audio>
+      <audio id="sfx40" data-start="11.8" data-duration="0.3" data-track-index="11" data-volume="0.22" src="assets/sfx/click_003.ogg"></audio>
+      <audio id="sfx41" data-start="12" data-duration="0.3" data-track-index="12" data-volume="0.3" src="assets/sfx/bong_001.ogg"></audio>
+      <audio id="sfx42" data-start="12.2" data-duration="0.3" data-track-index="11" data-volume="0.22" src="assets/sfx/click_003.ogg"></audio>
+      <audio id="sfx43" data-start="12.4" data-duration="0.3" data-track-index="12" data-volume="0.22" src="assets/sfx/click_003.ogg"></audio>
+      <audio id="sfx44" data-start="12.6" data-duration="0.3" data-track-index="11" data-volume="0.22" src="assets/sfx/click_003.ogg"></audio>
+      <audio id="sfx45" data-start="12.8" data-duration="0.3" data-track-index="12" data-volume="0.3" src="assets/sfx/bong_001.ogg"></audio>
+      <audio id="sfx46" data-start="13" data-duration="0.3" data-track-index="11" data-volume="0.22" src="assets/sfx/click_003.ogg"></audio>
+      <audio id="sfx47" data-start="13.5" data-duration="0.6" data-track-index="11" data-volume="0.5" src="assets/sfx/impactSoft_medium_001.ogg"></audio>
+      <audio id="sfx48" data-start="14.52" data-duration="0.3" data-track-index="11" data-volume="0.4" src="assets/sfx/click_002.ogg"></audio>
+      <audio id="sfx49" data-start="14.86" data-duration="0.3" data-track-index="11" data-volume="0.4" src="assets/sfx/click_002.ogg"></audio>
+      <audio id="sfx50" data-start="15.2" data-duration="0.3" data-track-index="11" data-volume="0.4" src="assets/sfx/click_002.ogg"></audio>
+      <audio id="sfx51" data-start="17.02" data-duration="1" data-track-index="11" data-volume="0.9" src="assets/sfx/impactSoft_heavy_003.ogg"></audio>
+      <audio id="sfx52" data-start="17.02" data-duration="0.8" data-track-index="12" data-volume="0.55" src="assets/sfx/impactMetal_heavy_000.ogg"></audio>
+      <audio id="sfx53" data-start="17.52" data-duration="0.3" data-track-index="13" data-volume="0.4" src="assets/sfx/click_002.ogg"></audio>
+      <audio id="sfx54" data-start="18.02" data-duration="0.3" data-track-index="11" data-volume="0.4" src="assets/sfx/click_002.ogg"></audio>
+      <audio id="sfx55" data-start="18.52" data-duration="0.3" data-track-index="11" data-volume="0.4" src="assets/sfx/click_002.ogg"></audio>
+      <audio id="sfx56" data-start="19.02" data-duration="0.6" data-track-index="11" data-volume="0.45" src="assets/sfx/impactSoft_medium_001.ogg"></audio>
+      <audio id="sfx57" data-start="20.52" data-duration="0.6" data-track-index="11" data-volume="0.45" src="assets/sfx/impactSoft_medium_001.ogg"></audio>
+      <audio id="sfx58" data-start="22.02" data-duration="1" data-track-index="11" data-volume="0.8" src="assets/sfx/impactSoft_heavy_003.ogg"></audio>
+    </div>
+
+    <script>
+      window.__timelines = window.__timelines || {};
+      const tl = gsap.timeline({ paused: true });
+      const $ = (s) => document.querySelector(s);
+      const RMS = [0.015,0.033,0.048,0.068,0.084,0.095,0.113,0.17,0.184,0.204,0.216,0.214,0.203,0.204,0.231,0.245,0.259,0.267,0.276,0.51,0.452,0.467,0.504,0.52,0.498,0.44,0.433,0.371,0.333,0.328,0.576,0.505,0.475,0.46,0.342,0.297,0.314,0.424,0.398,0.384,0.35,0.484,0.479,0.447,0.454,0.452,0.322,0.288,0.303,0.474,0.376,0.371,0.512,0.485,0.479,0.469,0.409,0.295,0.305,0.284,0.606,0.487,0.489,0.474,0.457,0.395,0.425,0.539,0.684,0.571,0.518,0.539,0.37,0.319,0.308,0.36,0.302,0.313,0.31,0.599,0.522,0.506,0.542,0.488,0.403,0.335,0.419,0.375,0.367,0.353,0.578,0.5,0.47,0.469,0.396,0.28,0.273,0.401,0.401,0.341,0.342,0.396,0.415,0.451,0.44,0.414,0.341,0.25,0.226,0.395,0.317,0.335,0.493,0.515,0.501,0.48,0.464,0.352,0.255,0.235,0.592,0.614,0.543,0.502,0.449,0.418,0.44,0.571,0.579,0.501,0.52,0.462,0.375,0.397,0.394,0.401,0.396,0.364,0.397,0.62,0.546,0.517,0.564,0.513,0.44,0.375,0.438,0.401,0.448,0.561,0.625,0.573,0.511,0.474,0.393,0.295,0.318,0.426,0.417,0.374,0.358,0.489,0.461,0.458,0.444,0.413,0.359,0.31,0.336,0.482,0.395,0.39,0.569,0.547,0.524,0.48,0.418,0.321,0.306,0.304,0.639,0.475,0.525,0.448,0.432,0.445,0.383,0.494,0.516,0.444,0.485,0.447,0.379,0.381,0.337,0.356,0.342,0.305,0.35,0.579,0.421,0.447,0.422,0.388,0.334,0.281,0.433,0.394,0.306,0.337,0.591,0.473,0.494,0.474,0.423,0.341,0.282,0.501,0.548,0.376,0.418,0.488,0.447,0.507,0.446,0.469,0.435,0.302,0.295,0.503,0.405,0.433,0.402,0.538,0.408,0.391,0.389,0.316,0.232,0.266,0.582,0.565,0.505,0.452,0.465,0.431,0.446,0.612,0.587,0.553,0.55,0.486,0.384,0.38,0.373,0.396,0.346,0.344,0.358,0.595,0.512,0.525,0.535,0.496,0.465,0.366,0.405,0.439,0.423,0.398,0.637,0.529,0.516,0.493,0.388,0.349,0.352,0.434,0.462,0.444,0.418,0.526,0.457,0.448,0.435,0.413,0.349,0.355,0.354,0.462,0.428,0.394,0.484,0.503,0.491,0.476,0.414,0.358,0.406,0.415,0.581,0.498,0.513,0.493,0.463,0.39,0.42,0.55,0.664,0.568,0.509,0.54,0.353,0.347,0.317,0.397,0.341,0.343,0.307,0.553,0.51,0.526,0.592,0.477,0.385,0.313,0.418,0.389,0.392,0.376,0.596,0.48,0.459,0.467,0.412,0.321,0.282,0.403,0.428,0.381,0.362,0.433,0.491,0.474,0.498,0.505,0.371,0.262,0.264,0.345,0.292,0.31,0.435,0.502,0.459,0.453,0.429,0.299,0.263,0.253,0.608,0.599,0.484,0.487,0.444,0.401,0.427,0.554,0.599,0.561,0.537,0.466,0.372,0.358,0.376,0.44,0.394,0.358,0.377,0.586,0.523,0.509,0.565,0.499,0.419,0.37,0.406,0.373,0.365,0.332,0.581,0.522,0.465,0.439,0.373,0.308,0.324,0.439,0.42,0.385,0.37,0.469,0.445,0.456,0.445,0.464,0.355,0.295,0.338,0.523,0.442,0.444,0.551,0.528,0.505,0.473,0.404,0.316,0.341,0.312,0.636,0.492,0.508,0.47,0.454,0.457,0.409,0.519,0.508,0.487,0.5,0.487,0.368,0.351,0.324,0.375,0.328,0.313,0.348,0.502,0.379,0.38,0.366,0.317,0.32,0.296,0.488,0.444,0.356,0.422,0.602,0.517,0.518,0.494,0.476,0.299,0.311,0.455,0.45,0.397,0.391,0.509,0.468,0.523,0.504,0.563,0.341,0.278,0.278,0.42,0.318,0.358,0.419,0.466,0.396,0.386,0.374,0.314,0.239,0.27,0.939,0.912,0.633,0.585,0.436,0.472,0.486,0.566,0.584,0.594,0.59,0.525,0.454,0.444,0.46,0.945,0.784,0.795,0.384,0.583,0.55,0.581,0.679,0.671,0.553,0.467,0.458,0.433,0.419,0.403,0.907,0.782,0.716,0.559,0.387,0.4,0.423,0.493,0.482,0.506,0.461,0.661,0.651,0.583,0.511,0.958,0.81,0.599,0.501,0.468,0.452,0.483,0.682,0.674,0.575,0.518,0.476,0.456,0.428,0.398,0.917,0.669,0.728,0.532,0.481,0.429,0.479,0.575,0.678,0.617,0.565,0.609,0.409,0.498,0.378,1,0.757,0.74,0.483,0.565,0.562,0.529,0.707,0.652,0.571,0.449,0.489,0.46,0.428,0.441,0.898,0.793,0.718,0.473,0.396,0.391,0.401,0.407,0.46,0.382,0.431,0.55,0.642,0.568,0.531,0.842,0.724,0.622,0.379,0.364,0.342,0.393,0.507,0.641,0.558,0.553,0.528,0.451,0.434,0.382,0.962,0.774,0.741,0.611,0.465,0.507,0.549,0.606,0.636,0.56,0.538,0.518,0.423,0.383,0.415,0.91,0.799,0.691,0.405,0.549,0.535,0.529,0.67,0.712,0.568,0.483,0.508,0.447,0.438,0.456,0.927,0.761,0.709,0.593,0.394,0.403,0.43,0.434,0.476,0.441,0.437,0.638,0.603,0.559,0.536,0.89,0.783,0.707,0.403,0.428,0.427,0.442,0.574,0.667,0.566,0.507,0.483,0.409,0.389,0.377,0.931,0.638,0.681,0.504,0.38,0.421,0.39,0.483,0.494,0.474,0.463,0.406,0.346,0.359,0.313,0.727,0.64,0.516,0.29,0.328,0.319,0.342,0.379,0.35,0.284,0.219,0.326,0.33,0.277,0.262,0.561,0.448,0.438,0.302,0.203,0.183,0.184,0.237,0.28,0.235,0.215,0.233,0.216,0.21,0.196,0.371,0.307,0.246,0.142,0.145,0.118,0.123,0.119,0.15,0.124,0.11,0.108,0.086,0.075,0.064,0.177,0.147,0.104,0.087,0.052,0.052,0.051,0.057,0.049,0.043,0.035,0.025,0.016,0.009,0.003];
+
+      const pop = (sel, t, o = {}) =>
+        tl.fromTo(sel, { opacity: 0, y: o.y ?? 18, scale: o.scale ?? 1 }, { opacity: 1, y: 0, scale: 1, duration: o.d ?? 0.35, ease: o.ease ?? "power3.out" }, t);
+      const on = (sel, t) => tl.set(sel, { opacity: 1 }, t);
+      function typeText(sel, text, t, d, prefixHtml) {
+        const el = $(sel);
+        const o = { n: 0 };
+        on(sel, t);
+        tl.to(o, { n: text.length, duration: d, ease: "none", onUpdate() {
+          const k = Math.round(o.n);
+          el.textContent = "$ " + text.slice(0, k) + (k < text.length ? "▌" : "");
+        } }, t);
+      }
+
+      // ---------- S1: three tools, three empty answers ----------
+      typeText("#c1", "lsmod | grep diamorphine", 0.2, 0.6);   on("#o1", 0.85);
+      typeText("#c2", "ls /proc | grep 4242", 1.0, 0.55);      on("#o2", 1.6);
+      typeText("#c3s1", "ls /sys/module | grep diamorphine", 1.75, 0.65); on("#o3", 2.45);
+      tl.to(["#c1", "#c2", "#c3s1", "#o1", "#o2", "#o3"], { opacity: 0.35, duration: 0.3 }, 2.5);
+      pop("#hl1", 2.52, { y: 30, d: 0.45 });
+      pop("#hl2", 3.52, { y: 30, d: 0.35 }); // beat-locked: 3.52s
+
+      // ---------- S2: ask the same question through independent paths ----------
+      pop("#s2title", 5.02, { y: 30, d: 0.45 });
+      pop("#s2sub", 5.3);
+      on("#s2panel", 5.9); on("#s2q", 6.0);
+      pop("#pr1", 6.02); pop("#pr2", 6.52); pop("#pr3", 7.02, { y: 10 }); // beat-grid: rows at 6.02 / 6.52 / 7.02
+      tl.fromTo("#stamp", { opacity: 0, scale: 1.7, rotation: -12 }, { opacity: 1, scale: 1, rotation: -5, duration: 0.22, ease: "power4.in" }, 7.52); // beat-locked: 7.52s
+      tl.to("#s2", { x: 8, duration: 0.05, yoyo: true, repeat: 3, ease: "none" }, 7.74);
+      tl.set("#s2", { x: 0 }, 7.96);
+
+      // ---------- S3: the scan ----------
+      const CHECKS = [
+        ["mod-xview", "Module list cross-view", 0],
+        ["mod-orphan-mem", "Orphaned module memory", "1 finding"],
+        ["mod-taint", "Taint & kernel-log accounting", "2 findings"],
+        ["mod-provenance", "Module provenance", 0],
+        ["syscall-table", "Syscall table integrity", "1 finding"],
+        ["ftrace-hooks", "ftrace hook ownership", 0],
+        ["inline-hooks", "Inline kernel-function hooks", 0],
+        ["proc-xview", "Hidden-process cross-view", "1 finding"],
+        ["net-xview", "Hidden-port cross-view", 0],
+        ["fs-xview", "Hidden file/directory cross-view", 0],
+        ["preload", "Dynamic-linker hijack", 0],
+        ["known-iocs", "Known rootkit indicators", "1 finding"],
+        ["hardening", "Hardening posture", "note"],
+      ];
+      const rowsEl = $("#rows");
+      CHECKS.forEach((c, i) => {
+        const bad = c[2] && c[2] !== "note";
+        const st = !c[2] ? ["[ ok ]", "green"] : bad ? ["[!!!!]", "red"] : ["[note]", "amber"];
+        const rs = !c[2] ? ["clean", "dim"] : bad ? [c[2], "red"] : ["1 finding", "amber"];
+        const d = document.createElement("div");
+        d.id = "row" + i;
+        d.className = "abs crow a" + (bad ? " bad" : "");
+        d.style.top = 342 + i * 49 + "px";
+        d.innerHTML = `<span class="st ${st[1]}">${st[0]}</span><span class="nm">${c[0]}</span><span class="ti">${c[1]}</span><span class="rs ${rs[1]}">${rs[0]}</span>`;
+        rowsEl.appendChild(d);
+      });
+      typeText("#c3", "./redoubt demo diamorphine-lkm", 9.55, 0.65);
+      $("#h3a").innerHTML = 'REDOUBT 1.0.0  <span class="dim" style="font-weight:400">kernel-module rootkit detector</span>';
+      on("#h3a", 10.3); on("#h3b", 10.4); on("#h3c", 10.5);
+      CHECKS.forEach((c, i) => pop("#row" + i, 10.6 + i * 0.2, { y: 8, d: 0.2 })); // 13 rows, 0.2s apart (accents; full set holds to 13.5)
+
+      // ---------- S4: the finding ----------
+      pop("#card", 13.5, { y: 24, d: 0.4 });
+      pop("#pill", 13.55); pop("#meta", 13.6);
+      pop("#ftitle", 13.62, { y: 20, d: 0.4 });
+      pop("#fr1", 14.52, { y: 8 }); pop("#fr2", 14.86, { y: 8 }); pop("#fr3", 15.2, { y: 8 });
+      pop("#fcap", 15.7); pop("#fresp", 16.1);
+
+      // ---------- S5: verdict ----------
+      tl.fromTo("#flash", { opacity: 0.85 }, { opacity: 0, duration: 0.5, ease: "power2.out" }, 17.02);
+      pop("#vlabel", 17.02, { y: 0, d: 0.3 });
+      tl.fromTo("#vword", { opacity: 0, scale: 1.35 }, { opacity: 1, scale: 1, duration: 0.3, ease: "expo.out" }, 17.02); // beat-locked: 17.02s (strong cue)
+      tl.to("#s5", { x: 12, duration: 0.05, yoyo: true, repeat: 5, ease: "none" }, 17.1);
+      tl.set("#s5", { x: 0 }, 17.42);
+      pop("#chip1", 17.52, { y: 16 }); pop("#chip2", 18.02, { y: 16 }); pop("#chip3", 18.52, { y: 16 }); // beat-grid: 17.52 / 18.02 / 18.52
+      const sc = { v: 0 };
+      tl.to(sc, { v: 100, duration: 0.8, ease: "power2.out", onUpdate() { $("#score").textContent = Math.round(sc.v); } }, 17.55);
+      pop("#tag1", 19.02, { y: 24, d: 0.4 }); pop("#tag2", 20.52, { y: 24, d: 0.4 });
+
+      // ---------- S6: wordmark ----------
+      tl.fromTo("#mark", { opacity: 0, scale: 0.92, y: 10 }, { opacity: 1, scale: 1, y: 0, duration: 0.6, ease: "expo.out" }, 22.02);
+      pop("#msub", 22.5); pop("#mfoot", 22.9);
+
+      // ---------- audio-reactive glow (music RMS, sampled per frame, seek-safe) ----------
+      const g = $("#glow");
+      const proxy = { t: 0 };
+      tl.to(proxy, { t: 24.5, duration: 24.5, ease: "none", onUpdate() {
+        const v = RMS[Math.min(RMS.length - 1, Math.floor(proxy.t * 30))] || 0;
+        const base = proxy.t < 13.5 ? 0.22 : proxy.t < 17 ? 0.4 : 0.55;
+        g.style.opacity = (base * (0.7 + 0.6 * v)).toFixed(3);
+      } }, 0);
+
+      window.__timelines["main"] = tl;
+      tl.seek(0);
+    </script>
+  </body>
+</html>

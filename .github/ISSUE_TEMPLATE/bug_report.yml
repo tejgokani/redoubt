@@ -1,0 +1,49 @@
+name: Bug report
+description: Redoubt crashes, mis-parses something, or behaves incorrectly
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for helping improve Redoubt. **Security vulnerabilities do not go here** - see [SECURITY.md](https://github.com/tejgokani/redoubt/blob/main/SECURITY.md).
+        If a check reported something on a clean machine, please use the *False positive* form instead.
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened, and what did you expect?
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Redoubt version
+      description: Output of `redoubt --version`
+    validations:
+      required: true
+  - type: dropdown
+    id: os
+    attributes:
+      label: Operating system
+      options: [Linux, macOS, Other Unix]
+    validations:
+      required: true
+  - type: input
+    id: kernel
+    attributes:
+      label: Kernel and architecture
+      description: Output of `uname -srm`, and the distribution if Linux
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: Steps to reproduce
+      description: The exact command line, and whether you ran it as root.
+    validations:
+      required: true
+  - type: textarea
+    id: output
+    attributes:
+      label: Output
+      description: Paste the terminal output or `--json` report. Remove anything sensitive (hostnames, process names, paths).
+      render: text

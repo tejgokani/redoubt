@@ -1,5 +1,49 @@
 # Contributing
 
+Thanks for helping. Redoubt is a small, focused project; a good contribution
+is usually one new check, one fixed false positive, or one clearer paragraph
+of documentation.
+
+## Ways to contribute
+
+- **Report a false positive.** Use the *False positive* issue form. On a real
+  kernel these are the most valuable reports - three bugs fixed before 1.0
+  were found by scanning a real machine.
+- **Report a bug or suggest a feature** with the matching issue form.
+- **Report a security vulnerability privately** - see [`SECURITY.md`](SECURITY.md).
+- **Add or improve a check, provider, scenario or translation** (below).
+
+By participating you agree to follow the [Code of Conduct](CODE_OF_CONDUCT.md).
+
+## Development setup
+
+```bash
+git clone https://github.com/tejgokani/redoubt.git && cd redoubt
+make WERROR=1        # zero warnings is the bar
+make test            # unit tests + the scenario matrix
+make syntax-linux    # if you touched src/platform/linux.c on a non-Linux machine
+```
+
+Requirements: a C11 compiler and `make`. Python 3 is only needed to regenerate
+fixtures (`tools/gen_fixtures.py`). CI builds with GCC on Linux and clang on macOS, and is
+stricter than a local clang build, so run `make syntax-linux` before pushing
+Linux-provider changes.
+
+## Pull requests
+
+1. Branch from `main`; keep the change focused.
+2. Add a test (below) and update `CHANGELOG.md` under *Unreleased*.
+3. Fill in the pull-request template. **Docs must not claim more than you tested** - say plainly what is modelled and what is real.
+4. CI must be green, including the live scan of a real kernel.
+
+## Translations
+
+The English `README.md` is authoritative. Translations live in
+[`docs/i18n/`](docs/i18n/) as `README.<lang>.md` and mirror its structure; only
+the README is translated (technical documents stay English). Native-speaker
+corrections are very welcome - please keep code blocks, check ids and file
+paths unchanged.
+
 ## Adding a check
 
 A check is a pure function of `rd_ctx*` — it never touches the OS directly.
