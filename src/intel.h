@@ -24,5 +24,7 @@ extern const char *const rd_watch_syms[]; /* kernel functions whose prologue is 
 const rd_ioc_mod *rd_ioc_mod_find(const char *name);
 /* Is this kernel function/syscall one that rootkits routinely hook to hide things? */
 int rd_is_sensitive_fn(const char *name);
+/* kallsyms tags that look like modules but are kernel-internal allocators: [bpf] [ftrace] [kprobes] [__builtin__ftrace] ... */
+int rd_is_pseudo_module(const char *name);
 
 #endif

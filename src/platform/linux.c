@@ -181,7 +181,7 @@ static int lin_mod_kallsyms(lin_t *L, rd_view *out, char *why, size_t sz) {
     }
     for (size_t i = 0; i < L->nks; i++) {
         const char *m = L->ks[i].mod;
-        if (!m || !strcmp(m, "bpf") || !strcmp(m, "ftrace") || !strcmp(m, "kprobes")) continue;
+        if (!m || rd_is_pseudo_module(m)) continue;
         if (!rd_view_find(out, m)) rd_view_add(out, m, 1, 0, "");
     }
     return RD_OK;
@@ -197,7 +197,7 @@ static int lin_ksyms(lin_t *L, rd_view *out, char *why, size_t sz) {
         int text = strchr("TtWw", s->type) != NULL;
         int special = !s->mod && (!strcmp(s->name, "_stext") || !strcmp(s->name, "_text") || !strcmp(s->name, "_etext"));
         if (!text && !special) continue;
-        if (s->mod && (!strcmp(s->mod, "bpf") || !strcmp(s->mod, "ftrace") || !strcmp(s->mod, "kprobes"))) continue;
+        if (s->mod && rd_is_pseudo_module(s->mod)) continue;
         rd_view_add(out, s->name, s->addr, 0, s->mod ? s->mod : "");
     }
     return RD_OK;

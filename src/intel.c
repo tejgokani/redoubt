@@ -63,6 +63,11 @@ static const char *const SENSITIVE[] = {
     "vfs_read", "commit_creds", "prepare_creds", "do_syscall_64", "kallsyms_lookup_name", NULL,
 };
 
+int rd_is_pseudo_module(const char *name) {
+    return !strcmp(name, "bpf") || !strcmp(name, "ftrace") || !strcmp(name, "kprobes") ||
+           !strncmp(name, "__builtin__", 11);
+}
+
 int rd_is_sensitive_fn(const char *name) {
     static const char *const prefixes[] = {"__x64_sys_", "__ia32_sys_", "__arm64_sys_", "__se_sys_", "sys_", NULL};
     for (const char *const *p = prefixes; *p; p++) {

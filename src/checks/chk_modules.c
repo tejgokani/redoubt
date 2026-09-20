@@ -53,6 +53,7 @@ static int run_mod_xview(rd_ctx *c) {
     }
     for (size_t i = 0; have_ks && i < ks->n && nh < 32; i++) {
         const char *nm = ks->items[i].key;
+        if (rd_is_pseudo_module(nm)) continue; /* [bpf], [__builtin__ftrace]: kernel allocators, not modules */
         if (rd_view_find(api, nm) || rd_view_find(sys, nm)) continue;
         if (!reconfirm(c, RDV_MOD_KALLSYMS, RDV_MOD_API, nm)) continue;
         snprintf(hm[nh].name, sizeof hm[nh].name, "%s", nm);
