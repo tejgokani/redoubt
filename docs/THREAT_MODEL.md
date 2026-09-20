@@ -10,7 +10,7 @@ already has root — it is a *persistence and stealth* tool, not an initial
 foothold — which is exactly why detecting it is hard: the detector and the
 rootkit run on the same compromised kernel.
 
-Redoubt targets three public families of technique, in order of how deep they
+Redoubt targets these public techniques, in rough order of how deep they
 reach:
 
 | Layer | Technique | Example family | Redoubt's answer |
