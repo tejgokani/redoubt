@@ -12,7 +12,8 @@ ifeq ($(WERROR),1)
 CFLAGS  += -Werror
 endif
 ifeq ($(UNAME_S),Linux)
-CFLAGS  += -D_GNU_SOURCE
+# GCC warns about snprintf() into fixed title buffers; truncating a long name in a report title is intended.
+CFLAGS  += -D_GNU_SOURCE -Wno-format-truncation
 endif
 ifeq ($(UNAME_S),Darwin)
 CFLAGS  += -D_DARWIN_C_SOURCE
