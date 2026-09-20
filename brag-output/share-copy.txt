@@ -1,2 +1,0 @@
-Rootkits don't hide. They lie: lsmod, ps and ls all say clean.
-redoubt asks the kernel the same question through independent paths and flags the disagreement. Plain C, no dependencies.

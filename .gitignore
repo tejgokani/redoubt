@@ -5,3 +5,6 @@ redoubt
 *.dylib
 *.so
 .DS_Store
+
+# local promo/video build output - not part of the source tree
+brag-output/
