@@ -140,7 +140,7 @@ Be direct and modest about it:
   `docs/THREAT_MODEL.md` says so up front, along with what would (an
   out-of-band memory image). That candour is deliberate: a green checkmark
   that overstates certainty is worse than no checkmark.
-- **It is an open-source teaching artefact too.** The engine is roughly 4,000 lines of
+- **It is an open-source teaching artefact too.** The engine is roughly 4,700 lines of
   readable C organised around one idea (views → checks → findings), with
   every check pure over data so a student can add a new one in ~50 lines and
   test it with a fixture — see `CONTRIBUTING.md`.
