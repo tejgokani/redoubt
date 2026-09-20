@@ -193,6 +193,48 @@ static void test_mod_xview(void) {
     rd_ctx_free(&c);
 }
 
+static void test_orphan_mem(void) {
+    rd_ctx c;
+    /* REGRESSION - on a real Linux 6.17 host a module owns several regions (text + data ...) but /proc/modules
+     * reports only the text base.  A "base inside region" test flagged 64 data regions on a clean machine.
+     * The kernel-symbol test explains them all. */
+    rd_provider *p = mem_new("Linux", "x86_64");
+    put(p, RDV_MOD_API, "ext4", 0x10000, 0xffffffffc0100000ULL, "Live");
+    put(p, RDV_MOD_MEM, "0xffffffffc0100000", 0xffffffffc0100000ULL, 0x11000, "syms=40"); /* text */
+    put(p, RDV_MOD_MEM, "0xffffffffc0a00000", 0xffffffffc0a00000ULL, 0x8000, "syms=14");  /* data region */
+    put(p, RDV_MOD_MEM, "0xffffffffc0b00000", 0xffffffffc0b00000ULL, 0x201000, "syms=7"); /* bpf image */
+    run_only(&c, p, "mod-orphan-mem");
+    CHECK(nfind(&c, "mod-orphan-mem", RD_INFO) == 0 && state_of(&c, "mod-orphan-mem") == RD_RAN);
+    rd_ctx_free(&c);
+
+    /* a region no listed module owns and no kernel symbol names: a hidden module's memory */
+    p = mem_new("Linux", "x86_64");
+    put(p, RDV_MOD_API, "ext4", 0x10000, 0xffffffffc0100000ULL, "Live");
+    put(p, RDV_MOD_MEM, "0xffffffffc0100000", 0xffffffffc0100000ULL, 0x11000, "syms=40");
+    put(p, RDV_MOD_MEM, "0xffffffffc0600000", 0xffffffffc0600000ULL, 0x6000, "syms=0");
+    put(p, RDV_MOD_MEM, "0xffffffffc0608000", 0xffffffffc0608000ULL, 0x2000, "syms=0");
+    run_only(&c, p, "mod-orphan-mem");
+    CHECK(nfind(&c, "mod-orphan-mem", RD_HIGH) == 1 && strstr(c.finds[0].title, "2 executable"));
+    CHECK(c.finds[0].conf < 75); /* a lead to correlate, never a conviction on its own */
+    rd_ctx_free(&c);
+
+    /* symbol-less region, but a listed module's base lies inside it: explained by the module list */
+    p = mem_new("Linux", "x86_64");
+    put(p, RDV_MOD_API, "odd", 0x4000, 0xffffffffc0300000ULL, "Live");
+    put(p, RDV_MOD_MEM, "0xffffffffc02ff000", 0xffffffffc02ff000ULL, 0x6000, "syms=0");
+    run_only(&c, p, "mod-orphan-mem");
+    CHECK(nfind(&c, "mod-orphan-mem", RD_INFO) == 0);
+    rd_ctx_free(&c);
+
+    /* addresses hidden (not root): skipped, not silently clean */
+    p = mem_new("Linux", "x86_64");
+    put(p, RDV_MOD_API, "ext4", 0x10000, 0, "Live");
+    put(p, RDV_MOD_MEM, "0xffffffffc0100000", 0xffffffffc0100000ULL, 0x11000, "syms=40");
+    run_only(&c, p, "mod-orphan-mem");
+    CHECK(state_of(&c, "mod-orphan-mem") == RD_SKIPPED);
+    rd_ctx_free(&c);
+}
+
 static void ksyms_basic(rd_provider *p) {
     put(p, RDV_KSYMS, "_stext", 0xffffffff81000000ULL, 0, "");
     put(p, RDV_KSYMS, "_etext", 0xffffffff82000000ULL, 0, "");
@@ -646,6 +688,7 @@ int main(void) {
     test_util();
     test_view();
     test_mod_xview();
+    test_orphan_mem();
     test_syscall_table();
     test_inline_hooks();
     test_ftrace();

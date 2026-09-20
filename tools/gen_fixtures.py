@@ -96,7 +96,13 @@ def linux_base(d):
     write(d, "mod.sysfs", [(n, 0, 0, "") for n, _, _ in MODS])
     write(d, "mod.kallsyms", [(n, 40 + i, 0, "") for i, (n, _, _) in enumerate(MODS)])
     write(d, "mod.disk", [(n, 0, 0, "kernel/%s.ko.zst" % n) for n in [m[0] for m in MODS] + DISK_ONLY])
-    write(d, "mod.mem", [("0x%x" % a, a, s + 0x1000, "move_module+0x1a4/0x3c0") for _, s, a in MODS])
+    # extra = "syms=N": how many kallsyms symbols fall inside the region.  On kernels >= 6.11 each module owns
+    # several regions (text + data ...) and other users (BPF images, ftrace trampolines) share the allocator.
+    write(d, "mod.mem", [("0x%x" % a, a, s + 0x1000, "syms=%d" % (30 + i)) for i, (_, s, a) in enumerate(MODS)] + [
+        ("0xffffffffc0a00000", 0xFFFFFFFFC0A00000, 0x8000, "syms=14"),    # ext4's DATA region (not its text base)
+        ("0xffffffffc0b00000", 0xFFFFFFFFC0B00000, 0x201000, "syms=7"),   # eBPF JIT pack [bpf]
+        ("0xffffffffc0c00000", 0xFFFFFFFFC0C00000, 0x2000, "syms=1"),     # ftrace trampoline [__builtin__ftrace]
+    ])
     write(d, "dmesg.mods", [])
     ks = [("_stext", STEXT, 0, ""), ("_etext", ETEXT, 0, ""), ("__x64_sys_ni_syscall", 0xFFFFFFFF81020010, 0, "")]
     ks += [("__x64_sys_" + n, a, 0, "") for _, n, a in SYSCALLS if n != "ni_syscall"]
@@ -158,7 +164,7 @@ def main():
                          ("taint", 12288, 0, "")])   # O (out-of-tree) + E (unsigned)
     write(d, "dmesg.mods", [("diamorphine", 0, 0, "out-of-tree module taints kernel")])
     write(d, "mod.mem", read_rows(os.path.join(ROOT, "_base-linux"), "mod.mem") +
-          [("0x%x" % orphan, orphan, 0x6000, "move_module+0x1a4/0x3c0")])
+          [("0x%x" % orphan, orphan, 0x6000, "syms=0")])
     sc = []
     for nr, n, a in SYSCALLS:
         if nr in (62, 78, 217):
@@ -184,7 +190,7 @@ def main():
                          ("taint", 12288, 0, "")])
     write(d, "dmesg.mods", [("hid_shim", 0, 0, "module signature verification failed")])
     write(d, "mod.mem", read_rows(os.path.join(ROOT, "_base-linux"), "mod.mem") +
-          [("0x%x" % orphan, orphan, 0x4000, "move_module+0x1a4/0x3c0")])
+          [("0x%x" % orphan, orphan, 0x4000, "syms=0")])
     hooks = [("__x64_sys_getdents64", "hook_getdents64"), ("__x64_sys_kill", "hook_kill"),
              ("tcp4_seq_show", "hook_tcp4_seq_show"), ("filldir64", "hook_filldir64")]
     write(d, "ftrace", read_rows(os.path.join(ROOT, "_base-linux"), "ftrace") +
@@ -208,7 +214,7 @@ def main():
                          ("taint", 12288, 0, "")])
     write(d, "mod.sysfs", read_rows(base_dir, "mod.sysfs") + [("snd_hda_shim", 0, 0, "OE")])
     write(d, "mod.kallsyms", read_rows(base_dir, "mod.kallsyms") + [("snd_hda_shim", 12, 0, "")])
-    write(d, "mod.mem", read_rows(base_dir, "mod.mem") + [("0x%x" % mbase, mbase, msize + 0x1000, "move_module+0x1a4/0x3c0")])
+    write(d, "mod.mem", read_rows(base_dir, "mod.mem") + [("0x%x" % mbase, mbase, msize + 0x1000, "syms=12")])
     write(d, "ksyms", read_rows(base_dir, "ksyms") + [("hook_filldir64", mbase + 0x40, 0, "snd_hda_shim"),
                                                        ("hook_tcp4_seq_show", mbase + 0x140, 0, "snd_hda_shim")])
     pro = []
@@ -223,9 +229,10 @@ def main():
     write(d, "net.bound", [(p, 0, 0, "") for p in PORTS] + [("tcp:31337", 0, 0, "")])
     scenario(d, base=B, title="Inline-hooking LKM (Suterusu style): jumps patched over kernel function prologues",
              story=["Instead of the syscall table, this rootkit overwrites the first bytes of filldir64 (directory listing) and",
-                    "tcp4_seq_show (socket listing) with a `jmp` into its own module. It only unlinks from /proc/modules,",
-                    "so sysfs and kallsyms still remember the module - a half-hearted hide, and a very common one."],
-             expect="mod-xview,inline-hooks,net-xview,mod-orphan-mem", verdict="COMPROMISED",
+                    "tcp4_seq_show (socket listing) with a `jmp` into its own module. It hides from lsmod by filtering the",
+                    "/proc/modules output rather than unlinking itself, so sysfs and kallsyms (which walk the kernel's own",
+                    "lists) still remember the module - a half-hearted hide, and a very common one."],
+             expect="mod-xview,inline-hooks,net-xview", verdict="COMPROMISED",
              limits="Its name ('snd_hda_shim') matches no signature, so known-iocs correctly stays quiet: detection is behavioural.")
 
     # ---- 4. userland (LD_PRELOAD) -----------------------------------------
@@ -263,8 +270,12 @@ def main():
     nv = 0xFFFFFFFFC0900000
     write(d, "mod.sysfs", read_rows(base_dir, "mod.sysfs") + [("nvidia", 0, 0, "PO"), ("dummy_mod", 0, 0, "")])
     write(d, "mod.kallsyms", read_rows(base_dir, "mod.kallsyms") + [("nvidia", 900, 0, ""), ("dummy_mod", 3, 0, "")])
-    write(d, "mod.mem", read_rows(base_dir, "mod.mem") + [("0x%x" % nv, nv, 0x61000, "move_module+0x1a4/0x3c0"),
-                                                         ("0xffffffffc0980000", 0xFFFFFFFFC0980000, 0x5000, "move_module+0x1a4/0x3c0")])
+    write(d, "mod.mem", read_rows(base_dir, "mod.mem") + [("0x%x" % nv, nv, 0x61000, "syms=900"),
+                                                         ("0xffffffffc0980000", 0xFFFFFFFFC0980000, 0x5000, "syms=3"),
+                                                         # a module's init-text region, freed right after init: symbol-less and gone on re-read
+                                                         ("0xffffffffc0d00000", 0xFFFFFFFFC0D00000, 0x3000, "syms=0")])
+    write(d, "mod.mem.recheck", read_rows(base_dir, "mod.mem") + [("0x%x" % nv, nv, 0x61000, "syms=900"),
+                                                                 ("0xffffffffc0980000", 0xFFFFFFFFC0980000, 0x5000, "syms=3")])
     write(d, "dmesg.mods", [("nvidia", 0, 0, "module license taints kernel")])
     # race 1: dummy_mod finishes loading between our reads -> absent from the FIRST mod.api read only
     write(d, "mod.api", read_rows(base_dir, "mod.api") + [("nvidia", 0x60000, nv, "Live")])
@@ -281,10 +292,11 @@ def main():
           [("__x64_sys_getdents64", 1, 0, "(1) R I  tramp: ftrace_regs_caller+0x0/0x54 (klp_ftrace_handler+0x0/0x110)")])
     scenario(d, base=B, title="Decoys: things that look like rootkits but are not (false-positive traps)",
              story=["NVIDIA's proprietary driver taints the kernel (P and O). A kernel livepatch hooks getdents64 through ftrace.",
+                    "Module data regions, an eBPF image and an ftrace trampoline share module address space but are not modules.",
                     "During the scan a module finishes loading, a process is born and another dies, and a socket closes.",
                     "Each of these creates a *momentary* cross-view mismatch. A naive diff tool cries wolf on all of them;",
                     "Redoubt re-samples the racy views and re-probes each candidate, so none of them survive."],
-             verdict="CLEAN", forbid="mod-xview,proc-xview,net-xview,ftrace-hooks,mod-taint,syscall-table",
+             verdict="CLEAN", forbid="mod-xview,mod-orphan-mem,proc-xview,net-xview,ftrace-hooks,mod-taint,syscall-table",
              limits="Confidence calibration is the point: this scenario must stay CLEAN or the tool is unusable in production.")
 
     # ---- macOS -----------------------------------------------------------

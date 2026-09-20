@@ -1,9 +1,10 @@
 base: ../_base-linux
 title: Decoys: things that look like rootkits but are not (false-positive traps)
 story: NVIDIA's proprietary driver taints the kernel (P and O). A kernel livepatch hooks getdents64 through ftrace.
+story: Module data regions, an eBPF image and an ftrace trampoline share module address space but are not modules.
 story: During the scan a module finishes loading, a process is born and another dies, and a socket closes.
 story: Each of these creates a *momentary* cross-view mismatch. A naive diff tool cries wolf on all of them;
 story: Redoubt re-samples the racy views and re-probes each candidate, so none of them survive.
-forbid: mod-xview,proc-xview,net-xview,ftrace-hooks,mod-taint,syscall-table
+forbid: mod-xview,mod-orphan-mem,proc-xview,net-xview,ftrace-hooks,mod-taint,syscall-table
 verdict: CLEAN
 limits: Confidence calibration is the point: this scenario must stay CLEAN or the tool is unusable in production.

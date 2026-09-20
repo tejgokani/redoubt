@@ -397,14 +397,36 @@ static int lin_mod_disk(lin_t *L, rd_view *out) {
     return 0;
 }
 
-static int lin_mod_mem(rd_view *out) {
+/* How many kallsyms symbols start inside [lo, hi)?  kallsyms names everything the kernel legitimately owns in
+ * module address space: a listed module's text AND data, [bpf] JIT images, [__builtin__ftrace] trampolines,
+ * kprobe stubs.  A module that unlinked itself from the module list is no longer walked by /proc/kallsyms, so
+ * its regions contain none. */
+static size_t ks_count_in(lin_t *L, uint64_t lo, uint64_t hi) {
+    size_t a = 0, b = L->nks;
+    while (a < b) {
+        size_t mid = a + (b - a) / 2;
+        if (L->ks[mid].addr < lo) a = mid + 1;
+        else b = mid;
+    }
+    size_t n = 0;
+    for (size_t i = a; i < L->nks && L->ks[i].addr < hi && n < 1000; i++) n++;
+    return n;
+}
+
+static int lin_mod_mem(lin_t *L, rd_view *out, char *why, size_t sz) {
+    if (ks_load(L) < 0) {
+        snprintf(why, sz, "%s", L->ks_why);
+        return RD_UNAVAIL;
+    }
     FILE *f = fopen("/proc/vmallocinfo", "r");
-    if (!f) return -1;
+    if (!f) {
+        snprintf(why, sz, "cannot read /proc/vmallocinfo: %s (need root)", strerror(errno));
+        return RD_UNAVAIL;
+    }
     /* Kernels before the ~6.11 execmem rework attribute a module's memory to move_module/module_alloc/
      * layout_and_allocate; kernels from the rework on (confirmed live on a 6.17 host, see docs/EVALUATION.md)
-     * attribute it - and every OTHER executable allocation (ftrace trampolines, kprobe stubs) - to the
-     * generic execmem_alloc.  bpf_prog_alloc* is excluded outright: a running eBPF program is common on any
-     * modern box (container runtimes, systemd, observability agents) and is not a hidden module. */
+     * attribute it - and every other executable allocation - to the generic execmem_alloc.  eBPF program
+     * allocations are excluded up front: they are ordinary on any modern host and are not modules. */
     static const char *const CALLERS[] = {"move_module", "module_alloc", "load_module", "layout_and_allocate",
                                           "module_memory_alloc", "execmem_alloc", NULL};
     char line[512];
@@ -420,10 +442,16 @@ static int lin_mod_mem(rd_view *out) {
         for (const char *const *c = CALLERS; *c; c++)
             if (strstr(caller, *c)) mod = 1;
         if (!mod) continue;
-        rd_view_addf(out, lo, size, caller, "0x%llx", lo);
+        char extra[64];
+        snprintf(extra, sizeof extra, "syms=%zu", ks_count_in(L, lo, hi));
+        rd_view_addf(out, lo, size, extra, "0x%llx", lo);
     }
     fclose(f);
-    return (seen && zero == seen) ? -2 : 0;
+    if (seen && zero == seen) {
+        snprintf(why, sz, "vmallocinfo addresses are zeroed (need root; kptr_restrict)");
+        return RD_UNAVAIL;
+    }
+    return RD_OK;
 }
 
 static void dmesg_scan(char *buf, rd_view *out) {
@@ -849,13 +877,7 @@ static int lin_collect(rd_provider *p, rd_view_id id, rd_view *out, char *why, s
     case RDV_MOD_SYSFS: rc = lin_mod_sysfs(out); break;
     case RDV_MOD_KALLSYMS: return lin_mod_kallsyms(L, out, why, whysz);
     case RDV_MOD_DISK: rc = lin_mod_disk(L, out); break;
-    case RDV_MOD_MEM:
-        rc = lin_mod_mem(out);
-        if (rc == -2) {
-            snprintf(why, whysz, "vmallocinfo addresses are zeroed (need root; kptr_restrict)");
-            return RD_UNAVAIL;
-        }
-        break;
+    case RDV_MOD_MEM: return lin_mod_mem(L, out, why, whysz);
     case RDV_DMESG_MODS: rc = lin_dmesg(out); break;
     case RDV_KSYMS: return lin_ksyms(L, out, why, whysz);
     case RDV_SYSCALLS: return lin_syscalls(L, out, why, whysz);

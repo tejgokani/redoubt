@@ -6,10 +6,19 @@
  * from the kernel's `modules` list so that `lsmod` and /proc/modules stop
  * showing it.  Nothing forces the rootkit to clean every other place the
  * kernel remembers the module, so we look in those places.
+ *
+ * Which places are truly independent matters.  /proc/modules and /proc/kallsyms
+ * both walk the `modules` list, so a plain list_del hides from BOTH; kallsyms
+ * only adds coverage against hiders that filter the /proc/modules *output*.
+ * The genuinely independent records are the sysfs kobject (/sys/module) and the
+ * kernel's executable-memory map.  A rootkit that removes the list entry AND
+ * the sysfs node (Diamorphine does both) is therefore invisible to mod-xview by
+ * construction and is caught by mod-orphan-mem / mod-taint instead.
  */
 #include "../checks.h"
 #include "../intel.h"
 
+#include <stdlib.h>
 #include <string.h>
 
 /* ------------------------------------------------------------ mod-xview */
@@ -69,8 +78,9 @@ static int run_mod_xview(rd_ctx *c) {
         rd_finding *f = rd_add(c, RD_HIGH, both ? 96 : 90, title,
                                "Present in:  %s%s%s\n"
                                "Absent from: /proc/modules (what lsmod reads)\n"
-                               "A loaded module the kernel itself still tracks, but the module list omits, has\n"
-                               "been unlinked from `modules` (list_del) - the standard LKM rootkit self-hiding trick.",
+                               "The kernel still tracks this module but the /proc/modules listing omits it: it was unlinked\n"
+                               "from the module list without removing its sysfs node, or the listing itself is being\n"
+                               "filtered. Either way, the module is hiding.",
                                hm[i].in_sys ? "/sys/module" : "", both ? ", " : "", hm[i].in_ks ? "kallsyms" : "");
         f->mitre = MITRE_KMOD;
         f->fix = "Do not unload on the live host (a hiding module usually cannot be rmmod'ed cleanly). Capture "
@@ -105,17 +115,18 @@ typedef struct {
     char caller[64];
 } region;
 
+/* A region is explained if the kernel names anything inside it (extra = "syms=N", N > 0: a listed module's
+ * text or data, a BPF image, an ftrace trampoline) or if a listed module's base address lies inside it. */
 static size_t find_orphans(rd_view *mem, rd_view *api, region *out, size_t max) {
     size_t k = 0;
     for (size_t i = 0; i < mem->n; i++) {
-        uint64_t a = mem->items[i].a;
+        uint64_t a = mem->items[i].a, len = mem->items[i].b;
         int covered = 0;
-        for (size_t j = 0; j < api->n; j++) {
-            uint64_t base = api->items[j].b, sz = api->items[j].a;
-            if (base && a >= base && a < base + sz + 0x2000) {
-                covered = 1;
-                break;
-            }
+        const char *sy = strstr(mem->items[i].extra, "syms=");
+        if (sy && atoi(sy + 5) > 0) covered = 1;
+        for (size_t j = 0; j < api->n && !covered; j++) {
+            uint64_t base = api->items[j].b;
+            if (base && base >= a && base < a + len) covered = 1;
         }
         if (!covered && k < max) {
             out[k].addr = a;
@@ -162,25 +173,22 @@ static int run_orphan_mem(rd_ctx *c) {
         kept++;
         total += first[i].size;
         if (kept <= 8)
-            rd_sb_addf(&sb, "  0x%llx  %llu bytes  allocated by %s\n", (unsigned long long)first[i].addr,
-                       (unsigned long long)first[i].size, first[i].caller);
+            rd_sb_addf(&sb, "  0x%llx  %llu bytes  (no kernel symbol inside)\n", (unsigned long long)first[i].addr,
+                       (unsigned long long)first[i].size);
     }
     if (kept) {
         char title[200];
         snprintf(title, sizeof title, "%zu executable allocation%s in module memory owned by no listed module",
                  kept, kept == 1 ? "" : "s");
         char *lines = rd_sb_take(&sb);
-        /* On kernels since the execmem rework this allocator also serves ftrace trampolines and kprobe
-         * optprobe stubs, which are legitimate and produce a handful of small, permanently-orphaned regions
-         * on any system using kprobes/livepatch/ftrace-based tooling. Confidence reflects that ambiguity: this
-         * is a lead to correlate, not standalone proof. See docs/EVALUATION.md. */
-        rd_finding *f = rd_add(c, RD_HIGH, 45, title,
-                               "%sTotal %llu bytes. The kernel's executable-memory map shows this in module\n"
-                               "address space with no /proc/modules entry to account for it.\n"
-                               "On kernels since the execmem rework this allocator is shared with ftrace trampolines\n"
-                               "and kprobe stubs (a normal source of a few small, permanently-unmatched regions) -\n"
-                               "this alone is a lead, not proof. Weight it up if mod-xview, syscall-table or\n"
-                               "ftrace-hooks also fire; weight it down if the regions are few and tiny.",
+        /* Capped below the conviction threshold: kallsyms could in principle omit a symbol-less legitimate
+         * region, so this is a strong lead to correlate rather than standalone proof. */
+        rd_finding *f = rd_add(c, RD_HIGH, 65, title,
+                               "%sTotal %llu bytes of executable/module address space that no kernel symbol table\n"
+                               "entry falls inside. Listed modules, BPF images, ftrace trampolines and kprobe stubs\n"
+                               "all appear in kallsyms; a module that unlinked itself from the module list stops\n"
+                               "being walked by it, so its regions look exactly like this.\n"
+                               "Correlate with mod-xview / mod-taint / syscall-table / ftrace-hooks.",
                                lines, (unsigned long long)total);
         free(lines);
         f->mitre = MITRE_KMOD;
