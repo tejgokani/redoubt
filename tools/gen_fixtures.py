@@ -102,6 +102,7 @@ def linux_base(d):
         ("0xffffffffc0a00000", 0xFFFFFFFFC0A00000, 0x8000, "syms=14"),    # ext4's DATA region (not its text base)
         ("0xffffffffc0b00000", 0xFFFFFFFFC0B00000, 0x201000, "syms=7"),   # eBPF JIT pack [bpf]
         ("0xffffffffc0c00000", 0xFFFFFFFFC0C00000, 0x2000, "syms=1"),     # ftrace trampoline [__builtin__ftrace]
+        ("0xffffffffc0e00000", 0xFFFFFFFFC0E00000, 0x2000, "syms=0 secs=3"),  # anonymous rodata: named only by /sys/module/*/sections
     ])
     write(d, "dmesg.mods", [])
     ks = [("_stext", STEXT, 0, ""), ("_etext", ETEXT, 0, ""), ("__x64_sys_ni_syscall", 0xFFFFFFFF81020010, 0, "")]

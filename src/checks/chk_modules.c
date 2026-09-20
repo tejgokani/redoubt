@@ -115,15 +115,17 @@ typedef struct {
     char caller[64];
 } region;
 
-/* A region is explained if the kernel names anything inside it (extra = "syms=N", N > 0: a listed module's
- * text or data, a BPF image, an ftrace trampoline) or if a listed module's base address lies inside it. */
+/* A region is explained if the kernel names anything inside it: a kallsyms symbol ("syms=N": a listed module's
+ * text/data, a BPF image, an ftrace trampoline), a section of a listed module ("secs=N": also covers anonymous
+ * rodata that has no symbol), or a listed module's base address. */
 static size_t find_orphans(rd_view *mem, rd_view *api, region *out, size_t max) {
     size_t k = 0;
     for (size_t i = 0; i < mem->n; i++) {
         uint64_t a = mem->items[i].a, len = mem->items[i].b;
         int covered = 0;
         const char *sy = strstr(mem->items[i].extra, "syms=");
-        if (sy && atoi(sy + 5) > 0) covered = 1;
+        const char *se = strstr(mem->items[i].extra, "secs=");
+        if ((sy && atoi(sy + 5) > 0) || (se && atoi(se + 5) > 0)) covered = 1;
         for (size_t j = 0; j < api->n && !covered; j++) {
             uint64_t base = api->items[j].b;
             if (base && base >= a && base < a + len) covered = 1;
@@ -173,7 +175,7 @@ static int run_orphan_mem(rd_ctx *c) {
         kept++;
         total += first[i].size;
         if (kept <= 8)
-            rd_sb_addf(&sb, "  0x%llx  %llu bytes  (no kernel symbol inside)\n", (unsigned long long)first[i].addr,
+            rd_sb_addf(&sb, "  0x%llx  %llu bytes  (no kernel symbol or module section inside)\n", (unsigned long long)first[i].addr,
                        (unsigned long long)first[i].size);
     }
     if (kept) {
@@ -184,10 +186,10 @@ static int run_orphan_mem(rd_ctx *c) {
         /* Capped below the conviction threshold: kallsyms could in principle omit a symbol-less legitimate
          * region, so this is a strong lead to correlate rather than standalone proof. */
         rd_finding *f = rd_add(c, RD_HIGH, 65, title,
-                               "%sTotal %llu bytes of executable/module address space that no kernel symbol table\n"
-                               "entry falls inside. Listed modules, BPF images, ftrace trampolines and kprobe stubs\n"
-                               "all appear in kallsyms; a module that unlinked itself from the module list stops\n"
-                               "being walked by it, so its regions look exactly like this.\n"
+                               "%sTotal %llu bytes of executable/module address space that no kallsyms symbol and no\n"
+                               "listed module's ELF section falls inside. Listed modules, BPF images, ftrace trampolines\n"
+                               "and kprobe stubs are all named by one of those; a module that removed itself from the\n"
+                               "kernel's lists stops being named, so its regions look exactly like this.\n"
                                "Correlate with mod-xview / mod-taint / syscall-table / ftrace-hooks.",
                                lines, (unsigned long long)total);
         free(lines);

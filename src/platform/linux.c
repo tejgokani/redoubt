@@ -51,6 +51,9 @@ typedef struct {
     int kc_fd;
     Elf64_Phdr *ph;
     size_t nph;
+    uint64_t *secs; /* section addresses of every listed module, from /sys/module/<m>/sections/*, sorted */
+    size_t nsecs, capsecs;
+    int secs_loaded;
 } lin_t;
 
 /* ------------------------------------------------------------- helpers */
@@ -401,6 +404,62 @@ static int lin_mod_disk(lin_t *L, rd_view *out) {
  * module address space: a listed module's text AND data, [bpf] JIT images, [__builtin__ftrace] trampolines,
  * kprobe stubs.  A module that unlinked itself from the module list is no longer walked by /proc/kallsyms, so
  * its regions contain none. */
+static int cmp_u64(const void *a, const void *b) {
+    uint64_t x = *(const uint64_t *)a, y = *(const uint64_t *)b;
+    return x < y ? -1 : (x > y ? 1 : 0);
+}
+
+/* Every allocated ELF section of every *listed* module has a file under /sys/module/<m>/sections/, containing
+ * its load address.  Unlike kallsyms this also names anonymous data (.rodata strings, .data..ro_after_init) that
+ * has no symbol, so it explains every region a listed module owns. */
+static void secs_load(lin_t *L) {
+    if (L->secs_loaded) return;
+    L->secs_loaded = 1;
+    DIR *d = opendir("/sys/module");
+    if (!d) return;
+    struct dirent *e;
+    while ((e = readdir(d))) {
+        if (e->d_name[0] == '.') continue;
+        char dir[600];
+        snprintf(dir, sizeof dir, "/sys/module/%s/sections", e->d_name);
+        DIR *sd = opendir(dir);
+        if (!sd) continue;
+        struct dirent *se;
+        while ((se = readdir(sd))) {
+            if (se->d_name[0] == '.') continue;
+            char fp[1200];
+            snprintf(fp, sizeof fp, "%s/%s", dir, se->d_name);
+            char *b = NULL;
+            if (rd_read_file(fp, &b, NULL, 64) != 0) continue;
+            uint64_t v = 0;
+            if (rd_parse_u64(rd_trim(b), &v) == 0 && v) {
+                if (L->nsecs == L->capsecs) {
+                    L->capsecs = L->capsecs ? L->capsecs * 2 : 4096;
+                    L->secs = rd_xrealloc(L->secs, L->capsecs * sizeof *L->secs);
+                }
+                L->secs[L->nsecs++] = v;
+            }
+            free(b);
+        }
+        closedir(sd);
+    }
+    closedir(d);
+    if (L->nsecs > 1) qsort(L->secs, L->nsecs, sizeof *L->secs, cmp_u64);
+}
+
+static size_t secs_count_in(lin_t *L, uint64_t lo, uint64_t hi) {
+    secs_load(L);
+    size_t a = 0, b = L->nsecs;
+    while (a < b) {
+        size_t mid = a + (b - a) / 2;
+        if (L->secs[mid] < lo) a = mid + 1;
+        else b = mid;
+    }
+    size_t n = 0;
+    for (size_t i = a; i < L->nsecs && L->secs[i] < hi && n < 1000; i++) n++;
+    return n;
+}
+
 static size_t ks_count_in(lin_t *L, uint64_t lo, uint64_t hi) {
     size_t a = 0, b = L->nks;
     while (a < b) {
@@ -443,7 +502,7 @@ static int lin_mod_mem(lin_t *L, rd_view *out, char *why, size_t sz) {
             if (strstr(caller, *c)) mod = 1;
         if (!mod) continue;
         char extra[64];
-        snprintf(extra, sizeof extra, "syms=%zu", ks_count_in(L, lo, hi));
+        snprintf(extra, sizeof extra, "syms=%zu secs=%zu", ks_count_in(L, lo, hi), secs_count_in(L, lo, hi));
         rd_view_addf(out, lo, size, extra, "0x%llx", lo);
     }
     fclose(f);
@@ -927,6 +986,7 @@ static void lin_destroy(rd_provider *p) {
         free(L->ks[i].mod);
     }
     free(L->ks);
+    free(L->secs);
     free(L->ph);
     if (L->kc_fd > 0) close(L->kc_fd);
     free(L);

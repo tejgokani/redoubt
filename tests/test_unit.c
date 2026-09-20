@@ -207,6 +207,15 @@ static void test_orphan_mem(void) {
     CHECK(nfind(&c, "mod-orphan-mem", RD_INFO) == 0 && state_of(&c, "mod-orphan-mem") == RD_RAN);
     rd_ctx_free(&c);
 
+    /* REGRESSION - second real-kernel finding: 26 one-page regions holding only anonymous rodata had no kallsyms
+     * symbol.  They are named by the owning module's /sys/module/<m>/sections/* files instead. */
+    p = mem_new("Linux", "x86_64");
+    put(p, RDV_MOD_API, "ext4", 0x10000, 0xffffffffc0100000ULL, "Live");
+    put(p, RDV_MOD_MEM, "0xffffffffc0245000", 0xffffffffc0245000ULL, 0x2000, "syms=0 secs=3");
+    run_only(&c, p, "mod-orphan-mem");
+    CHECK(nfind(&c, "mod-orphan-mem", RD_INFO) == 0);
+    rd_ctx_free(&c);
+
     /* a region no listed module owns and no kernel symbol names: a hidden module's memory */
     p = mem_new("Linux", "x86_64");
     put(p, RDV_MOD_API, "ext4", 0x10000, 0xffffffffc0100000ULL, "Live");
