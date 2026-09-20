@@ -89,15 +89,47 @@ from `CLEAN` to `COMPROMISED`, exit code 1. This is a real hide, detected by
 the real macOS collector, not a fixture. See `docs/DEMO.md` for the exact
 transcript and how to reproduce it live in front of a reviewer.
 
-**Linux:** the collector (`src/platform/linux.c`) is exercised by `eval`'s
-fixtures for logic, and its raw-syscall / `/proc/kcore` / ftrace-log parsing
-was validated with `make syntax-linux` (full-strictness compile against a
-Linux-header shim, see `tests/shim/`) plus manual review against kernel
-documentation (`Documentation/ABI/testing/sysfs-module`,
-`Documentation/trace/ftrace.rst`, ELF program headers for `/proc/kcore`). If
-your course provides a Linux VM or lab machine, `make && sudo ./redoubt scan`
-gives full-coverage live results there — every check that reports "skipped"
-on this dev machine is Linux-only and will run there.
+**Linux:** every push runs `sudo ./redoubt scan` against a real, unmodified
+kernel on GitHub's `ubuntu-latest` runner (`.github/workflows/ci.yml`) — not
+a fixture, not a container pretending to be a kernel, an actual `uname -r`
+Linux box with ~60 real modules, real eBPF programs from the runner's own
+tooling, and real ftrace/kprobe infrastructure. CI **fails the build** if
+that scan is not `CLEAN` with zero skipped checks, so this is enforced on
+every commit, not a one-time claim. See the "Live scan" step's log on any
+run for the exact output.
+
+Getting there took three rounds of real bugs the fixtures could never have
+caught, because the fixtures are only as good as the assumptions used to
+write them:
+
+1. **`ftrace-hooks` false-positive**, first real run: it read `enabled_functions`
+   lines like `ip_send_skb (1) R  tramp: 0xffffffffc0471000
+   (kprobe_ftrace_handler+0x0/0x1c0)` and treated the raw trampoline address
+   as the hook owner — but that address is ftrace's *own* allocation, common
+   to every hook; the actual owner is the name in parentheses. Fixed by
+   parsing past the `tramp:` field. (`src/checks/chk_kernel.c`)
+2. **`mod-xview` false-positive**: a real kernel's `kallsyms` tags ftrace's
+   own trampoline pool as pseudo-module `[__builtin__ftrace]`, which is not a
+   loadable module and was never going to appear in `/proc/modules`. Fixed by
+   an explicit pseudo-module allowlist. (`src/intel.c`)
+3. **`mod-orphan-mem` false-positive, twice** — the deepest one. The check's
+   entire premise (`/proc/vmallocinfo` entries attributed to a module-loading
+   function are module memory) turned out to rest on a caller name
+   (`move_module`) that Linux's ~6.11 "execmem" rework renamed to a generic
+   `execmem_alloc` shared by module loading, eBPF JIT, ftrace trampolines and
+   kprobe stubs alike — so on the real 6.17 runner the check first flagged
+   **64 unrelated regions**, then, after switching to "does kallsyms name
+   anything in this range" as the independent check, flagged **26 more**
+   (a module's anonymous rodata, which kallsyms doesn't cover but each
+   module's `/sys/module/<name>/sections/` files do). Both fixes are
+   `git log`-visible, real, and now regression-tested with the exact data
+   shapes captured from that run (`tests/test_unit.c`'s `test_orphan_mem`).
+
+This is the honest version of "tested on a real kernel": not a claim that it
+worked the first time, but a CI gate that made every gap impossible to
+ignore, plus a fix and a regression test for each one. `docs/DEMO.md`
+Demo 2 additionally exercises the macOS collector against a **real** live
+process hide.
 
 ## 3. Unit tests (`make unit`)
 

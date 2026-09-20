@@ -7,22 +7,23 @@ jobs:
       - uses: actions/checkout@v4
       - run: make -k WERROR=1
       - run: make test
-      - name: Kernel facts (ground truth for the collectors)
+      - name: Kernel facts (context for the live-scan log, see docs/EVALUATION.md)
         run: |
           uname -a
           echo "taint: $(cat /proc/sys/kernel/tainted)"
-          echo "--- enabled_functions"; sudo head -40 /sys/kernel/tracing/enabled_functions || true
-          echo "--- kallsyms module tags"; sudo awk 'NF>=4 {print $4}' /proc/kallsyms | sort | uniq -c | sort -rn | head -20
-          echo "--- vmallocinfo callers (module area)"; sudo awk '$1 ~ /0xffffffffc/ {print $4}' /proc/vmallocinfo | sed 's/+.*//' | sort | uniq -c | sort -rn | head -15
-          echo "--- vmallocinfo sample"; sudo grep -m6 -E 'module|bpf|ftrace' /proc/vmallocinfo || true
-          echo "--- vmallocinfo: every region starting in the module area"; sudo grep -E '^ *0xffffffffc' /proc/vmallocinfo | head -45 || true
-          echo "--- vmallocinfo: total lines / module-area lines"; sudo sh -c 'wc -l < /proc/vmallocinfo'; sudo grep -cE '^ *0xffffffffc' /proc/vmallocinfo || true
-          echo "--- pseudo-module symbols in kallsyms"; sudo grep -E '\[(bpf|kprobes|ftrace|__builtin__[a-z]+)\]' /proc/kallsyms | head -12 || true
-          echo "--- first 6 listed modules (addr,size)"; head -6 /proc/modules | awk '{print $1, $2, $6}'
-          echo "--- dmesg taint"; sudo dmesg | grep -i taint | head || true
-          echo "--- modules"; wc -l < /proc/modules; ls /sys/module | wc -l
-      - name: Live scan
-        run: sudo ./redoubt scan --no-color -v || true
+          echo "modules: $(wc -l < /proc/modules) listed, $(ls /sys/module | wc -l) in sysfs"
+          echo "vmallocinfo module-area regions: $(sudo grep -cE '^ *0xffffffffc' /proc/vmallocinfo || echo n/a)"
+      - name: Live scan (must be CLEAN with full coverage on a real, unmodified kernel)
+        run: |
+          sudo ./redoubt scan --no-color -v
+          sudo ./redoubt scan --json > /tmp/scan.json
+          python3 -c "
+          import json
+          r = json.load(open('/tmp/scan.json'))
+          assert r['verdict'] == 'CLEAN', 'false positive on a clean real kernel: ' + r['verdict']
+          assert r['coverage']['skipped'] == 0, 'a check could not run: ' + str(r['coverage'])
+          print('OK:', r['coverage']['ran'], 'checks ran, 0 skipped, verdict CLEAN')
+          "
       - name: Snapshot the real kernel
         run: sudo ./redoubt snapshot real-linux && sudo chown -R "$USER" real-linux
       - uses: actions/upload-artifact@v4
