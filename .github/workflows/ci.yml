@@ -16,7 +16,7 @@ jobs:
           echo "--- vmallocinfo callers (module area)"; sudo awk '$1 ~ /0xffffffffc/ {print $4}' /proc/vmallocinfo | sed 's/+.*//' | sort | uniq -c | sort -rn | head -15
           echo "--- vmallocinfo sample"; sudo grep -m6 -E 'module|bpf|ftrace' /proc/vmallocinfo || true
           echo "--- vmallocinfo: every region starting in the module area"; sudo grep -E '^ *0xffffffffc' /proc/vmallocinfo | head -45 || true
-          echo "--- vmallocinfo: total lines / module-area lines"; sudo wc -l < /proc/vmallocinfo; sudo grep -cE '^ *0xffffffffc' /proc/vmallocinfo || true
+          echo "--- vmallocinfo: total lines / module-area lines"; sudo sh -c 'wc -l < /proc/vmallocinfo'; sudo grep -cE '^ *0xffffffffc' /proc/vmallocinfo || true
           echo "--- pseudo-module symbols in kallsyms"; sudo grep -E '\[(bpf|kprobes|ftrace|__builtin__[a-z]+)\]' /proc/kallsyms | head -12 || true
           echo "--- first 6 listed modules (addr,size)"; head -6 /proc/modules | awk '{print $1, $2, $6}'
           echo "--- dmesg taint"; sudo dmesg | grep -i taint | head || true

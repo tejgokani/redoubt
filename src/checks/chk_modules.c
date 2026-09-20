@@ -167,13 +167,20 @@ static int run_orphan_mem(rd_ctx *c) {
     }
     if (kept) {
         char title[200];
-        snprintf(title, sizeof title, "%zu module-loader allocation%s owned by no listed module", kept,
-                 kept == 1 ? "" : "s");
+        snprintf(title, sizeof title, "%zu executable allocation%s in module memory owned by no listed module",
+                 kept, kept == 1 ? "" : "s");
         char *lines = rd_sb_take(&sb);
-        rd_finding *f = rd_add(c, RD_HIGH, 70, title,
-                               "%sTotal %llu bytes. The kernel's vmalloc map shows executable module memory\n"
-                               "that no entry in /proc/modules accounts for: a module that is loaded but hidden.\n"
-                               "(BPF JIT / ftrace trampolines use other callers and are excluded.)",
+        /* On kernels since the execmem rework this allocator also serves ftrace trampolines and kprobe
+         * optprobe stubs, which are legitimate and produce a handful of small, permanently-orphaned regions
+         * on any system using kprobes/livepatch/ftrace-based tooling. Confidence reflects that ambiguity: this
+         * is a lead to correlate, not standalone proof. See docs/EVALUATION.md. */
+        rd_finding *f = rd_add(c, RD_HIGH, 45, title,
+                               "%sTotal %llu bytes. The kernel's executable-memory map shows this in module\n"
+                               "address space with no /proc/modules entry to account for it.\n"
+                               "On kernels since the execmem rework this allocator is shared with ftrace trampolines\n"
+                               "and kprobe stubs (a normal source of a few small, permanently-unmatched regions) -\n"
+                               "this alone is a lead, not proof. Weight it up if mod-xview, syscall-table or\n"
+                               "ftrace-hooks also fire; weight it down if the regions are few and tiny.",
                                lines, (unsigned long long)total);
         free(lines);
         f->mitre = MITRE_KMOD;

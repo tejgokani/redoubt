@@ -400,8 +400,13 @@ static int lin_mod_disk(lin_t *L, rd_view *out) {
 static int lin_mod_mem(rd_view *out) {
     FILE *f = fopen("/proc/vmallocinfo", "r");
     if (!f) return -1;
+    /* Kernels before the ~6.11 execmem rework attribute a module's memory to move_module/module_alloc/
+     * layout_and_allocate; kernels from the rework on (confirmed live on a 6.17 host, see docs/EVALUATION.md)
+     * attribute it - and every OTHER executable allocation (ftrace trampolines, kprobe stubs) - to the
+     * generic execmem_alloc.  bpf_prog_alloc* is excluded outright: a running eBPF program is common on any
+     * modern box (container runtimes, systemd, observability agents) and is not a hidden module. */
     static const char *const CALLERS[] = {"move_module", "module_alloc", "load_module", "layout_and_allocate",
-                                          "module_memory_alloc", NULL};
+                                          "module_memory_alloc", "execmem_alloc", NULL};
     char line[512];
     size_t zero = 0, seen = 0;
     while (fgets(line, sizeof line, f)) {
@@ -410,6 +415,7 @@ static int lin_mod_mem(rd_view *out) {
         if (sscanf(line, " 0x%llx-0x%llx %llu %127s", &lo, &hi, &size, caller) < 3) continue;
         seen++;
         if (lo == 0) zero++;
+        if (rd_starts_with(caller, "bpf_prog_alloc") || rd_starts_with(caller, "bpf_jit_")) continue;
         int mod = 0;
         for (const char *const *c = CALLERS; *c; c++)
             if (strstr(caller, *c)) mod = 1;
