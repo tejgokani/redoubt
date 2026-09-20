@@ -18,7 +18,7 @@
  * what separates a hidden module from a module that was merely (un)loaded
  * between our two reads. */
 static int reconfirm(rd_ctx *c, rd_view_id in_id, rd_view_id out_id, const char *name) {
-    rd_view a, b;
+    rd_view a = {0}, b = {0};
     int sa = rd_recollect(c, in_id, &a);
     int sb = rd_recollect(c, out_id, &b);
     int keep = 1;
@@ -139,7 +139,7 @@ static int run_orphan_mem(rd_ctx *c) {
     if (n1 == 0) return 0;
 
     /* second sample: a module that was mid-load during sample one will now be listed */
-    rd_view m2, a2;
+    rd_view m2 = {0}, a2 = {0};
     size_t n2 = n1;
     memcpy(second, first, sizeof first);
     if (rd_recollect(c, RDV_MOD_MEM, &m2) == RD_OK) {

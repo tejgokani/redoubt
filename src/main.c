@@ -433,7 +433,7 @@ static int cmd_eval(rd_options o, const char *dirarg) {
             rootkit_scen++;
             if (v.id != RD_VERDICT_CLEAN) rootkit_hit++;
         }
-        char expcol[24], detcol[24];
+        char expcol[40], detcol[40];
         snprintf(expcol, sizeof expcol, "%s", s.verdict[0] ? s.verdict : "-");
         snprintf(detcol, sizeof detcol, "%d/%d", det, exp);
         printf("%-22s %-12s %-12s %-9s %-9d %s", names[i], expcol, rd_verdict_name(v.id), exp ? detcol : "-", fpc,

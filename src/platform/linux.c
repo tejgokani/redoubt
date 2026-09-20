@@ -353,7 +353,7 @@ static int lin_mod_sysfs(rd_view *out) {
         if (!exists(p)) continue; /* built-in modules have no initstate */
         snprintf(p, sizeof p, "/sys/module/%s/taint", e->d_name);
         char *t = NULL;
-        char name[128];
+        char name[300];
         snprintf(name, sizeof name, "%s", e->d_name);
         rd_norm_modname(name);
         if (rd_read_file(p, &t, NULL, 64) == 0) {
@@ -534,7 +534,7 @@ static int lin_proc_raw(rd_view *out) {
     }
     for (size_t i = 0; i < top.n; i++) {
         rd_view_add(out, top.items[i].key, 0, 0, "");
-        char p[64];
+        char p[512];
         snprintf(p, sizeof p, "/proc/%s/task", top.items[i].key);
         raw_ls(p, cb_pid, out);
     }
@@ -550,7 +550,7 @@ static int lin_proc_api(rd_view *out) {
     while ((e = readdir(d))) {
         if (!is_num(e->d_name)) continue;
         rd_view_add(out, e->d_name, 0, 0, "");
-        char p[64];
+        char p[512];
         snprintf(p, sizeof p, "/proc/%s/task", e->d_name);
         DIR *t = opendir(p);
         if (!t) continue;

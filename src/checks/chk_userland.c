@@ -56,7 +56,7 @@ static int run_proc(rd_ctx *c) {
 
     /* Re-check.  A process that died, or one that became visible on the second
      * listing, was a race with our scan - not a hidden process. */
-    rd_view api2, raw2;
+    rd_view api2 = {0}, raw2 = {0};
     int sa = rd_recollect(c, RDV_PROC_API, &api2);
     int sr = have_raw ? rd_recollect(c, RDV_PROC_RAW, &raw2) : RD_UNAVAIL;
     size_t reported = 0;
@@ -107,7 +107,7 @@ static int run_net(rd_ctx *c) {
     }
     if (nc == 0) return 0;
 
-    rd_view l2;
+    rd_view l2 = {0};
     int sl = rd_recollect(c, RDV_NET_LISTED, &l2);
     size_t reported = 0;
     for (size_t i = 0; i < nc; i++) {
@@ -144,7 +144,7 @@ static int run_fs(rd_ctx *c) {
     if (have_d) {
         /* On ext4/xfs/tmpfs a directory's link count is 2 + its sub-directories.
          * A directory hiding a child from readdir() cannot hide it from st_nlink. */
-        rd_view d2;
+        rd_view d2 = {0};
         int s2 = rd_recollect(c, RDV_DIRS, &d2);
         for (size_t i = 0; i < d->n; i++) {
             const rd_item *it = &d->items[i];
