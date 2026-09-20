@@ -1,0 +1,2 @@
+# key	a	b	extra
+kthread_helper	0x0	0x0	out-of-tree module taints kernel

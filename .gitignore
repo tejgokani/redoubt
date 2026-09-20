@@ -1,0 +1,7 @@
+build/
+redoubt
+*.o
+*.d
+*.dylib
+*.so
+.DS_Store

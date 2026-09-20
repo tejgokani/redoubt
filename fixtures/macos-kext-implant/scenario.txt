@@ -1,0 +1,7 @@
+base: ../_base-macos
+title: macOS kernel-extension implant with SIP off and code-signing disabled
+story: An attacker reduced security (SIP off, AMFI disabled via boot-args), loaded an unregistered kext,
+story: a second driver that kmutil does not list but IOKit does, injected a dylib system-wide, and hid a process.
+expect: kext-inventory,boot-integrity,preload,proc-xview
+verdict: COMPROMISED
+limits: Apple-silicon macOS makes kernel extensions rare and hard to load; this models the residual risk.

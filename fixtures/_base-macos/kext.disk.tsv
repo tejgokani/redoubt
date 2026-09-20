@@ -1,0 +1,3 @@
+# key	a	b	extra
+com.highpoint-tech.kext.HighPointIOP	0x0	0x0	/Library/Extensions/HighPointIOP.kext
+com.joshuawise.kexts.HoRNDIS	0x0	0x0	/Library/Extensions/HoRNDIS.kext

@@ -1,0 +1,8 @@
+base: ../_base-linux
+title: Userland rootkit via /etc/ld.so.preload (Azazel / Jynx style) - no kernel module at all
+story: A shared library preloaded into every process hooks readdir()/open(), so `ps`, `ls` and `top` lie.
+story: There is nothing wrong in the kernel - and Redoubt says so - but the raw getdents64 view, a direct stat()
+story: of /etc/ld.so.preload, and the pid brute-force expose the lie in seconds.
+expect: preload,proc-xview,fs-xview
+verdict: COMPROMISED
+limits: All kernel-integrity checks correctly report clean: the compromise is entirely in user space.

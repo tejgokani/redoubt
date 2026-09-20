@@ -1,0 +1,14 @@
+# key	a	b	extra
+ext4	0xd5000	0xffffffffc0100000	Live
+jbd2	0x24000	0xffffffffc01e0000	Live
+mbcache	0x4000	0xffffffffc0210000	Live
+crc32c_intel	0x4000	0xffffffffc0220000	Live
+virtio_net	0x2a000	0xffffffffc0230000	Live
+virtio_blk	0x8000	0xffffffffc0270000	Live
+nf_tables	0x9a000	0xffffffffc0290000	Live
+nf_conntrack	0x125000	0xffffffffc0340000	Live
+xt_conntrack	0x4000	0xffffffffc0490000	Live
+br_netfilter	0x1c000	0xffffffffc04a0000	Live
+overlay	0x21000	0xffffffffc04d0000	Live
+tcp_bbr	0x8000	0xffffffffc0500000	Live
+nvidia	0x60000	0xffffffffc0900000	Live

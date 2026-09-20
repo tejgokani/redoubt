@@ -1,0 +1,5 @@
+base: ../_base-macos
+title: Healthy macOS laptop (false-positive control)
+story: Modelled on the machine this project was developed on: SIP on, no third-party kernel extensions loaded.
+story: Two old third-party kexts sit on disk, not loaded - the inventory correctly treats them as inert.
+verdict: CLEAN

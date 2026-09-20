@@ -1,0 +1,8 @@
+base: ../_base-linux
+title: ftrace-hooking LKM (Singularity / KoviD style, modern kernels)
+story: Modern rootkits skip the syscall table (it is read-only and monitored) and hijack functions with ftrace instead:
+story: getdents64 and kill to hide files and processes, tcp4_seq_show to hide a listening port.
+story: The module hides from lsmod and sysfs - but every hook callback still names the module that owns it.
+expect: ftrace-hooks,mod-orphan-mem,mod-taint,proc-xview,net-xview,fs-xview
+verdict: COMPROMISED
+limits: The syscall table is intact here (ftrace does not touch it), so syscall-table correctly stays quiet.

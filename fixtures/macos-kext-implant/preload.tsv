@@ -1,0 +1,2 @@
+# key	a	b	extra
+launchctl:DYLD_INSERT_LIBRARIES	0x0	0x0	/tmp/.hook.dylib

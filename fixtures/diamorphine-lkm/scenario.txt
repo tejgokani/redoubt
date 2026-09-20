@@ -1,0 +1,8 @@
+base: ../_base-linux
+title: Diamorphine-style LKM: syscall hooks + a module that erases itself everywhere
+story: Modelled on the documented behaviour of Diamorphine: an LKM that overwrites the kill/getdents/getdents64
+story: syscall-table entries, hides a process ('kill -31'), and unlinks itself from the module list *and* sysfs.
+story: lsmod shows nothing, /sys/module shows nothing, `ps` shows nothing - yet the kernel still knows.
+expect: mod-orphan-mem,mod-taint,syscall-table,proc-xview,known-iocs
+verdict: COMPROMISED
+limits: mod-xview stays silent: this rootkit removed its sysfs node too. It is caught by kernel-memory accounting, the syscall table, taint/dmesg residue and direct pid probing instead.

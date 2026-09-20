@@ -1,0 +1,5 @@
+base: ../_base-linux
+title: Healthy Linux server (false-positive control)
+story: A normal Ubuntu-style server: nginx, sshd, MySQL, 12 modules. Every view agrees with every other.
+story: A correct detector must say CLEAN. (It still prints hardening advice: posture never changes the verdict.)
+verdict: CLEAN

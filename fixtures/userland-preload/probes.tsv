@@ -1,0 +1,2 @@
+# key	a	b	extra
+/etc/ld.so.preload	0x1	0x0	user-space preload rootkits

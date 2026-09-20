@@ -1,0 +1,6 @@
+# key	a	b	extra
+com.apple.kpi.bsd	0x0	0x0	ioreg
+com.apple.kpi.iokit	0x0	0x0	ioreg
+com.apple.kpi.libkern	0x0	0x0	ioreg
+com.apple.kpi.mach	0x0	0x0	ioreg
+com.example.hidden.driver	0x0	0x0	ioreg

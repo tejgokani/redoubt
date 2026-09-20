@@ -1,0 +1,8 @@
+base: ../_base-linux
+title: Inline-hooking LKM (Suterusu style): jumps patched over kernel function prologues
+story: Instead of the syscall table, this rootkit overwrites the first bytes of filldir64 (directory listing) and
+story: tcp4_seq_show (socket listing) with a `jmp` into its own module. It only unlinks from /proc/modules,
+story: so sysfs and kallsyms still remember the module - a half-hearted hide, and a very common one.
+expect: mod-xview,inline-hooks,net-xview,mod-orphan-mem
+verdict: COMPROMISED
+limits: Its name ('snd_hda_shim') matches no signature, so known-iocs correctly stays quiet: detection is behavioural.

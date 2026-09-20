@@ -1,0 +1,17 @@
+name: CI
+on: [push, pull_request]
+jobs:
+  linux:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: make WERROR=1
+      - run: make test
+      - run: sudo ./redoubt scan --fail-on critical; test $? -le 1
+  macos:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: make WERROR=1
+      - run: make test
+      - run: ./redoubt scan --fail-on critical; test $? -le 1

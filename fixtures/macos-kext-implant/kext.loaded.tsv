@@ -1,0 +1,9 @@
+# key	a	b	extra
+com.apple.kpi.bsd	0x1000	0xfffffe0007c9b550	25.5.0
+com.apple.kpi.iokit	0x1000	0xfffffe0007c9b550	25.5.0
+com.apple.kpi.libkern	0x1000	0xfffffe0007c9b550	25.5.0
+com.apple.kpi.mach	0x1000	0xfffffe0007c9b550	25.5.0
+com.apple.kec.corecrypto	0x1000	0xfffffe0007c9b550	25.5.0
+com.apple.iokit.IOCryptoAcceleratorFamily	0x1000	0xfffffe0007c9b550	25.5.0
+com.apple.driver.AppleMobileFileIntegrity	0x1000	0xfffffe0007c9b550	25.5.0
+com.example.netfilter	0x8000	0xfffffe0008000000	1.0.2

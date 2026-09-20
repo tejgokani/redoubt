@@ -1,0 +1,8 @@
+base: ../_base-linux
+title: Limit case: a rootkit that lies consistently in every view user space can read
+story: This rootkit hooks kill, getdents, sched_getaffinity, stat, bind and vmallocinfo, restores the syscall table,
+story: and erases itself from every list. From inside the machine there is no discrepancy left to find.
+story: All that leaks is what it could not un-say: the kernel's taint flag and one line in the kernel log.
+expect: mod-taint
+verdict: SUSPICIOUS
+limits: The hidden process/port/hooks in this scenario are invisible to ANY user-space tool. Redoubt can only raise SUSPICIOUS from residue. Detecting this class needs an out-of-band memory image - see docs/THREAT_MODEL.md.

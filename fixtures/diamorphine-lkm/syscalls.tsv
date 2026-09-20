@@ -1,0 +1,14 @@
+# key	a	b	extra
+0	0xffffffff81301a40	0x0	__x64_sys_read
+1	0xffffffff81301e10	0x0	__x64_sys_write
+2	0xffffffff81302a70	0x0	__x64_sys_open
+3	0xffffffff81303190	0x0	__x64_sys_close
+4	0xffffffff81308b20	0x0	__x64_sys_stat
+5	0xffffffff81308c50	0x0	__x64_sys_fstat
+6	0xffffffff81308d80	0x0	__x64_sys_lstat
+39	0xffffffff810a1c30	0x0	__x64_sys_getpid
+62	0xffffffffc0600120	0x0	?
+78	0xffffffffc0600240	0x0	?
+217	0xffffffffc0600360	0x0	?
+257	0xffffffff813031a0	0x0	__x64_sys_openat
+300	0xffffffff81020010	0x0	__x64_sys_ni_syscall

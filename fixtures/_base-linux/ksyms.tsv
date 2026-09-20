@@ -1,0 +1,36 @@
+# key	a	b	extra
+_stext	0xffffffff81000000	0x0	
+_etext	0xffffffff82000000	0x0	
+__x64_sys_ni_syscall	0xffffffff81020010	0x0	
+__x64_sys_read	0xffffffff81301a40	0x0	
+__x64_sys_write	0xffffffff81301e10	0x0	
+__x64_sys_open	0xffffffff81302a70	0x0	
+__x64_sys_close	0xffffffff81303190	0x0	
+__x64_sys_stat	0xffffffff81308b20	0x0	
+__x64_sys_fstat	0xffffffff81308c50	0x0	
+__x64_sys_lstat	0xffffffff81308d80	0x0	
+__x64_sys_getpid	0xffffffff810a1c30	0x0	
+__x64_sys_kill	0xffffffff810b7d50	0x0	
+__x64_sys_getdents	0xffffffff81324c10	0x0	
+__x64_sys_getdents64	0xffffffff81324f60	0x0	
+__x64_sys_openat	0xffffffff813031a0	0x0	
+filldir	0xffffffff81324700	0x0	
+filldir64	0xffffffff81324800	0x0	
+iterate_dir	0xffffffff81324300	0x0	
+tcp4_seq_show	0xffffffff81a55100	0x0	
+tcp6_seq_show	0xffffffff81b02200	0x0	
+udp4_seq_show	0xffffffff81a80300	0x0	
+udp6_seq_show	0xffffffff81b10400	0x0	
+proc_pid_readdir	0xffffffff8137a500	0x0	
+vfs_read	0xffffffff812f3f00	0x0	
+commit_creds	0xffffffff810c0900	0x0	
+__x64_sys_newfstatat	0xffffffff81308f00	0x0	
+__x64_sys_init_module	0xffffffff811a0100	0x0	
+__x64_sys_finit_module	0xffffffff811a0300	0x0	
+__x64_sys_delete_module	0xffffffff811a0500	0x0	
+kprobe_ftrace_handler	0xffffffff811e0100	0x0	
+ftrace_regs_caller	0xffffffff81c01000	0x0	
+klp_ftrace_handler	0xffffffff811f0200	0x0	
+call_direct_funcs	0xffffffff811e0900	0x0	
+ext4_lookup	0xffffffffc0100a40	0x0	ext4
+nf_tables_newrule	0xffffffffc0290840	0x0	nf_tables

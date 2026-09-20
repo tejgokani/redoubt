@@ -1,0 +1,2 @@
+# key	a	b	extra
+ld.so.preload	0x0	0x0	/dev/shm/.lib/libc.so.7
