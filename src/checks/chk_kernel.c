@@ -228,8 +228,19 @@ static int run_ftrace(rd_ctx *c) {
         uint64_t raw = 0;
         int have_raw = 0;
         char *save = NULL;
+        int after_tramp = 0;
         for (char *tok = strtok_r(line, " \t", &save); tok; tok = strtok_r(NULL, " \t", &save)) {
             size_t l = strlen(tok);
+            /* "tramp: 0xADDR (callback+0x0/0x1c0)": the address is ftrace's own trampoline, allocated in
+             * module memory by the kernel itself.  Only the parenthesised callback names the owner. */
+            if (after_tramp) {
+                after_tramp = 0;
+                continue;
+            }
+            if (strcmp(tok, "tramp:") == 0) {
+                after_tramp = 1;
+                continue;
+            }
             if (l == 1 && strchr("RIDLMO", tok[0])) {
                 if (tok[0] == 'I') ipmodify = 1;
             } else if (tok[0] == '[' && tok[l - 1] == ']') {

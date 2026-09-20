@@ -174,6 +174,18 @@ static void test_mod_xview(void) {
     CHECK(nfind(&c, "mod-xview", RD_MEDIUM) == 1);
     rd_ctx_free(&c);
 
+    /* REGRESSION - real kernels tag ftrace trampolines / BPF images in kallsyms as pseudo-modules
+     * ([__builtin__ftrace], [bpf], [kprobes]); they are allocators, not hidden modules. */
+    p = mem_new("Linux", "x86_64");
+    put(p, RDV_MOD_API, "ext4", 0x1000, 0xffffffffc0000000ULL, "Live");
+    put(p, RDV_MOD_SYSFS, "ext4", 0, 0, "");
+    put(p, RDV_MOD_KALLSYMS, "ext4", 1, 0, "");
+    put(p, RDV_MOD_KALLSYMS, "__builtin__ftrace", 1, 0, "");
+    put(p, RDV_MOD_KALLSYMS, "bpf", 1, 0, "");
+    run_only(&c, p, "mod-xview");
+    CHECK(nfind(&c, "mod-xview", RD_INFO) == 0);
+    rd_ctx_free(&c);
+
     p = mem_new("Linux", "x86_64"); /* missing view => skipped, never a silent "clean" */
     put(p, RDV_MOD_API, "ext4", 0, 0, "Live");
     run_only(&c, p, "mod-xview");
@@ -281,6 +293,27 @@ static void test_ftrace(void) {
     put(p, RDV_FTRACE, "__x64_sys_kill", 1, 0, "(1) R I  tramp: ftrace_regs_caller+0x0/0x54 (cb+0x0/0x10 [edr_agent])");
     run_only(&c, p, "ftrace-hooks");
     CHECK(nfind(&c, "ftrace-hooks", RD_CRITICAL) == 0 && nfind(&c, "ftrace-hooks", RD_MEDIUM) == 1);
+    rd_ctx_free(&c);
+
+    /* REGRESSION - captured from a real Linux 6.17 kernel on a clean machine.  A kprobe on ip_send_skb shows the
+     * trampoline as a raw module-area address; the owner is the core callback in parentheses.  The first
+     * version of this check flagged the trampoline address as "hidden code": a false positive. */
+    p = mem_new("Linux", "x86_64");
+    ksyms_basic(p);
+    put(p, RDV_FTRACE, "ip_send_skb", 1, 0,
+        "(1) R          tramp: 0xffffffffc0471000 (kprobe_ftrace_handler+0x0/0x1c0) ->kprobe_ftrace_handler+0x0/0x1c0");
+    run_only(&c, p, "ftrace-hooks");
+    CHECK(nfind(&c, "ftrace-hooks", RD_INFO) == 0);
+    rd_ctx_free(&c);
+
+    /* ...while a hidden module's callback in the SAME real format is still caught */
+    p = mem_new("Linux", "x86_64");
+    ksyms_basic(p);
+    have(p, RDV_MOD_API);
+    put(p, RDV_FTRACE, "__x64_sys_getdents64", 1, 0,
+        "(1) R I        tramp: 0xffffffffc0471000 (hook_getdents64+0x0/0xe0 [ghost]) ->hook_getdents64+0x0/0xe0 [ghost]");
+    run_only(&c, p, "ftrace-hooks");
+    CHECK(nfind(&c, "ftrace-hooks", RD_CRITICAL) == 1);
     rd_ctx_free(&c);
 
     /* core-kernel callback (kprobes, livepatch): nothing to say */
