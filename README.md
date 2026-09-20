@@ -24,7 +24,7 @@ CHECKS
   1. [CRITICAL  96%] 3 syscall-table entries redirected outside kernel text
      ...
 
-VERDICT  COMPROMISED   risk score 100/100   coverage 13/14 checks   5 independent checks flagging
+VERDICT  COMPROMISED   risk score 100/100   coverage 13/13 checks   5 independent checks flagging
 ```
 
 ## Why this exists
@@ -34,10 +34,10 @@ equivalents run at kernel privilege and rewrite what the kernel tells every
 other program — including the tools an administrator would normally reach
 for. Redoubt's answer is structural, not a signature list: collect the same
 fact through several paths that a rootkit would have to hook *separately*
-(the module list via `/proc/modules` **and** `/sys/module` **and**
-`kallsyms`; a process via the libc listing **and** the raw `getdents64`
-syscall **and** a `kill(pid,0)` probe; a port via `/proc/net/*` **and**
-`bind()`), then flag the disagreements. See
+(a module via `/proc/modules` **and** its `/sys/module` node **and** the
+kernel's executable-memory map; a process via the libc listing **and** the
+raw `getdents64` syscall **and** a `kill(pid,0)` probe; a port via
+`/proc/net/*` **and** `bind()`), then flag the disagreements. See
 **[docs/THREAT_MODEL.md](docs/THREAT_MODEL.md)** for exactly what this does
 and does not catch — read that before trusting a CLEAN result.
 
@@ -45,7 +45,7 @@ and does not catch — read that before trusting a CLEAN result.
 
 ```bash
 make            # builds ./redoubt  (plain C11, no dependencies)
-make test       # 79 unit assertions + the 9-scenario detection matrix
+make test       # 88 unit assertions + the 10-scenario detection matrix
 ./redoubt demo   # walk through the bundled rootkit scenarios, offline
 sudo ./redoubt scan   # scan THIS machine (root recommended: kallsyms, /proc/kcore, dmesg)
 ```
@@ -62,7 +62,7 @@ real hook and catches it live.
 | `redoubt demo [name\|all]` | replay a bundled scenario through the real engine, offline |
 | `redoubt eval [dir]` | run every scenario, print the pass/fail detection matrix |
 | `redoubt snapshot DIR` | save every kernel view of this machine to `DIR/` (evidence bundle / `--baseline` input) |
-| `redoubt list-checks` | list the 16 detection checks and what each compares |
+| `redoubt list-checks` | list the 16 checks and what each compares |
 
 Useful flags: `--from DIR` (analyse a snapshot instead of live), `--baseline
 DIR` (diff against a known-good snapshot), `--simulate SPEC` (inject a
@@ -83,13 +83,19 @@ Architecture (how a check, a view, and a provider fit together):
 
 ## Evidence this actually works
 
-- `make eval` — 9 scenarios (6 rootkit families + 3 clean/decoy controls)
-  replayed through the production detection engine; a dedicated unit test
-  proves the decoy scenario is clean *because of* the anti-race logic, not by
-  luck.
-- `make unit` — 79 assertions pinning down the exact severity/confidence
+- **A real Linux kernel, on every commit.** CI runs `sudo redoubt scan` on an
+  unmodified Ubuntu 6.17 kernel and fails the build unless it is `CLEAN` with
+  all 13 applicable checks run. Getting there caught three real
+  false-positive bugs that hand-written test data could never have found
+  (`docs/EVALUATION.md`); each is now a regression test, and a snapshot of
+  that real kernel is a permanent fixture (`fixtures/real-linux-6.17-azure`).
+- `make eval` — 10 scenarios (6 modelled rootkit families + 4 clean/decoy
+  controls, one of them the real capture above) replayed through the
+  production detection engine; a dedicated unit test proves the decoy
+  scenario is clean *because of* the anti-race logic, not by luck.
+- `make unit` — 88 assertions pinning down the exact severity/confidence
   decisions (boundary conditions, livepatch vs. rootkit ftrace hooks, race
-  handling).
+  handling, the real-kernel regressions).
 - A **real** live demo: a minimal user-space hook
   (`tests/hooks/hide_pid.c`) actually hides a running process via
   `DYLD_INSERT_LIBRARIES`/`LD_PRELOAD`, and `redoubt scan` catches it on the

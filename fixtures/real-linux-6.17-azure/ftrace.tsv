@@ -1,0 +1,3 @@
+# key	a	b	extra
+ip_send_skb	0x1	0x0	(1) R          tramp: 0xffffffffc05ff000 (kprobe_ftrace_handler+0x0/0x1c0) ->kprobe_ftrace_handler+0x0/0x1c0
+skb_consume_udp	0x1	0x0	(1) R          tramp: 0xffffffffc05ff000 (kprobe_ftrace_handler+0x0/0x1c0) ->kprobe_ftrace_handler+0x0/0x1c0

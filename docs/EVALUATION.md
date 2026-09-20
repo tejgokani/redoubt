@@ -10,7 +10,7 @@ make eval
 # or:  ./redoubt eval fixtures
 ```
 
-`fixtures/` holds nine scenarios (`fixtures/*/scenario.txt`), each a
+`fixtures/` holds ten scenarios (`fixtures/*/scenario.txt`), each a
 directory of `<view>.tsv` files that stand in for what a live scan would have
 read. `eval` replays every scenario through the **exact same detection
 engine** (`src/checks/*.c`, `src/engine.c`) used for a live scan, then checks
@@ -22,11 +22,12 @@ the result against that scenario's declared `expect:`/`forbid:`/`verdict:`.
 | 2 | `clean-macos` | a normal laptop | `CLEAN`, 0 findings |
 | 3 | `diamorphine-lkm` | syscall-table hooking + full self-hide | `COMPROMISED` via 5 independent checks |
 | 4 | `ftrace-lkm` | modern ftrace-hook rootkit (Singularity/KoviD-style) | `COMPROMISED` via 6 checks |
-| 5 | `inline-hook-lkm` | inline-patching rootkit (Suterusu-style) | `COMPROMISED` via 4 checks |
+| 5 | `inline-hook-lkm` | inline-patching rootkit (Suterusu-style) | `COMPROMISED` via 3 checks |
 | 6 | `userland-preload` | pure user-space rootkit, **no kernel involvement** | `COMPROMISED`; all kernel-integrity checks correctly stay quiet |
 | 7 | `macos-kext-implant` | unregistered kext + SIP/AMFI tampering | `COMPROMISED` via 4 checks |
 | 8 | `stealth-limit` | a rootkit that scrubs every view *except* taint/dmesg residue | `SUSPICIOUS` (deliberately not `COMPROMISED` — see below) |
 | 9 | `false-positive-traps` | 6 things that *look* like rootkits but aren't (see below) | `CLEAN`, and specifically none of the 6 decoy checks fire |
+| 10 | `real-linux-6.17-azure` | **not modelled** — a real snapshot captured by `redoubt snapshot` on an unmodified kernel | `CLEAN` (real-data false-positive guard) |
 
 Run it: `./redoubt eval fixtures` prints a pass/fail matrix and exits 1 on
 any miss. `make test` runs this plus the unit suite.
@@ -73,7 +74,7 @@ Everything below was actually run, not simulated.
 
 **macOS (Apple M-series, this repo's dev machine):**
 ```
-./redoubt scan                    # CLEAN, 5/6 checks ran without sudo
+./redoubt scan                    # CLEAN, all 5 applicable checks ran without sudo
 ./redoubt list-checks
 ```
 Then a **real** minimal user-space hook (`tests/hooks/hide_pid.c`, built by
@@ -118,12 +119,13 @@ write them:
    (`move_module`) that Linux's ~6.11 "execmem" rework renamed to a generic
    `execmem_alloc` shared by module loading, eBPF JIT, ftrace trampolines and
    kprobe stubs alike — so on the real 6.17 runner the check first flagged
-   **64 unrelated regions**, then, after switching to "does kallsyms name
-   anything in this range" as the independent check, flagged **26 more**
-   (a module's anonymous rodata, which kallsyms doesn't cover but each
-   module's `/sys/module/<name>/sections/` files do). Both fixes are
-   `git log`-visible, real, and now regression-tested with the exact data
-   shapes captured from that run (`tests/test_unit.c`'s `test_orphan_mem`).
+   **64 unrelated regions**. Switching to "does kallsyms name anything in
+   this range" as the independent check cut that to **26** — all one-page
+   regions of a module's anonymous rodata, which has no symbol but *is*
+   named by the owning module's `/sys/module/<name>/sections/` files. Using
+   both sources brought it to zero. Both fixes are `git log`-visible and are
+   regression-tested with the data shapes captured from that run
+   (`tests/test_unit.c`'s `test_orphan_mem`).
 
 This is the honest version of "tested on a real kernel": not a claim that it
 worked the first time, but a CI gate that made every gap impossible to
@@ -133,7 +135,7 @@ process hide.
 
 ## 3. Unit tests (`make unit`)
 
-79 assertions in `tests/test_unit.c`, run through an in-memory provider so
+88 assertions in `tests/test_unit.c`, run through an in-memory provider so
 each test states exactly which views exist. They pin down the specific
 decisions that make the false-positive handling real rather than lucky:
 boundary addresses at exactly `_stext`/`_etext`, the "inside text but not a

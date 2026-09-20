@@ -145,8 +145,12 @@ def jmp_rel32(from_addr, to_addr):
 
 
 def main():
+    # Regenerate only the modelled scenarios. Directories named real-* are captures from live kernels
+    # (made with `redoubt snapshot`) and are precious: never delete them.
     if os.path.isdir(ROOT):
-        shutil.rmtree(ROOT)
+        for name in os.listdir(ROOT):
+            if not name.startswith("real-"):
+                shutil.rmtree(os.path.join(ROOT, name))
     base = os.path.join(ROOT, "_base-linux")
     linux_base(base)
     B = "../_base-linux"

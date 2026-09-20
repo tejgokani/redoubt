@@ -1,12 +1,12 @@
 # Demo script (for a lab defence / faculty walkthrough)
 
-Two demos. Do both if you have 10 minutes; do #1 alone if you have 3.
+Three demos. Do 1 and 2 if you have 10 minutes; do #1 alone if you have 3.
 
 ## Demo 1 — the fixture scenarios (works offline, no root, no VM)
 
 ```bash
 make                 # builds ./redoubt
-./redoubt demo        # lists the 9 bundled scenarios with one-line descriptions
+./redoubt demo        # lists the bundled scenarios with one-line descriptions
 ```
 
 Pick the flagship one:
@@ -44,7 +44,7 @@ Talking points while it's on screen:
   logic disabled and asserts the decoys *do* fire there — proving the CLEAN
   result on the real engine is because of that logic, not an accident.
 
-Run all nine and show the matrix:
+Run every scenario and show the matrix (the last row is real captured kernel data, not a model):
 ```bash
 ./redoubt eval fixtures
 ```
@@ -107,9 +107,11 @@ one edits.
 ## If you're asked "why should I believe the verdict"
 
 Point at `docs/EVALUATION.md`. Short version: the *logic* is proven against
-nine scenarios including deliberate false-positive traps (`eval`), the exact
-severity/confidence math is unit-tested (`make unit`, 79 assertions), and the
-*collectors* were run for real on this machine (Demo 2, above) — the
+ten scenarios including deliberate false-positive traps (`eval`), the exact
+severity/confidence math is unit-tested (`make unit`, 88 assertions), the
+Linux collectors run against a real unmodified kernel on every commit (CI
+fails unless it scans CLEAN), and the macOS collectors were run for real on
+this machine (Demo 2, above) — the
 combination is what "correctness" means for a tool like this, and the docs
 say plainly which parts are simulated and which are not.
 
@@ -138,7 +140,7 @@ Be direct and modest about it:
   `docs/THREAT_MODEL.md` says so up front, along with what would (an
   out-of-band memory image). That candour is deliberate: a green checkmark
   that overstates certainty is worse than no checkmark.
-- **It is an open-source teaching artefact too.** The engine is ~4k lines of
+- **It is an open-source teaching artefact too.** The engine is roughly 4,000 lines of
   readable C organised around one idea (views → checks → findings), with
   every check pure over data so a student can add a new one in ~50 lines and
   test it with a fixture — see `CONTRIBUTING.md`.

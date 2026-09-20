@@ -17,7 +17,7 @@ reach:
 |---|---|---|---|
 | Kernel code | syscall-table patching | Diamorphine, Adore, Knark | [`syscall-table`](../src/checks/chk_kernel.c) reads the real table from `/proc/kcore` |
 | Kernel code | `ftrace`/inline hooking | Reptile, Suterusu, KoviD | [`ftrace-hooks`](../src/checks/chk_kernel.c), [`inline-hooks`](../src/checks/chk_kernel.c) read live function prologues |
-| Kernel bookkeeping | self-unlinking from the module list | almost all of the above | [`mod-xview`](../src/checks/chk_modules.c), [`mod-orphan-mem`](../src/checks/chk_modules.c), [`mod-taint`](../src/checks/chk_modules.c) |
+| Kernel bookkeeping | self-unlinking from the module list (and, for the thorough ones, from sysfs too) | almost all of the above | [`mod-xview`](../src/checks/chk_modules.c) for half-hides (list only, or a filtered `/proc/modules`); [`mod-orphan-mem`](../src/checks/chk_modules.c) and [`mod-taint`](../src/checks/chk_modules.c) for full hides |
 | User-visible objects | filtering `getdents`/`kill`/`bind` results | any of the above, plus pure user-space kits (Azazel, Jynx, BEURK) | [`proc-xview`](../src/checks/chk_userland.c), [`net-xview`](../src/checks/chk_userland.c), [`fs-xview`](../src/checks/chk_userland.c) |
 | Install layer | `LD_PRELOAD`/`DYLD_INSERT_LIBRARIES` | user-space kits | [`preload`](../src/checks/chk_userland.c) |
 | macOS specific | unregistered/hidden kexts, SIP/AMFI tampering | — | [`kext-inventory`](../src/checks/chk_macos.c), [`boot-integrity`](../src/checks/chk_macos.c) |

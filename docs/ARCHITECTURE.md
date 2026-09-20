@@ -79,9 +79,9 @@ it does not count against coverage the way a `SKIPPED` check does.
 
 ## Why this shape
 
-- **Checks never touch the OS.** All 16 detection checks in `src/checks/`
+- **Checks never touch the OS.** All 16 checks in `src/checks/`
   are pure C over `rd_view`, with zero `#ifdef __linux__`. That is what lets
-  `eval` replay six rootkit scenarios and three clean/decoy scenarios through
+  `eval` replay six modelled rootkit scenarios and four clean/decoy scenarios (one a real captured kernel snapshot) through
   the *exact* production detection code with no OS, no VM, and no privilege
   requirement — see `docs/EVALUATION.md`.
 - **Confidence is a first-class field, not a side note.** Every finding

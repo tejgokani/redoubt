@@ -1,0 +1,7 @@
+title: REAL capture: unmodified Ubuntu Linux 6.17 (Azure) - false-positive ground truth
+story: Not modelled - captured by `redoubt snapshot` on a live, unmodified kernel (GitHub Actions ubuntu-latest, root).
+story: 59 real modules, 473 real syscall-table entries, real eBPF/kprobe/ftrace activity, 255 real processes.
+story: This is the data that exposed three real false-positive bugs during development (see docs/EVALUATION.md);
+story: it now guards against their return. ksyms.tsv is pruned to the symbols the checks actually resolve.
+verdict: CLEAN
+limits: A clean host proves the tool does not cry wolf on a real kernel; it says nothing about detection. That is what the modelled scenarios test.
